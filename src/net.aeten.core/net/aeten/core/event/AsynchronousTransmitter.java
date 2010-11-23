@@ -20,7 +20,7 @@ import net.aeten.core.logging.Logger;
  * 
  * @author Thomas Pérennou
  */
-class AsynchronousTransmitter<Event, Data extends EventData<?, Event>>
+public class AsynchronousTransmitter<Event, Data extends EventData<?, Event>>
 		implements TransmitterService<Event, Data> {
 
 	private final String identifier;

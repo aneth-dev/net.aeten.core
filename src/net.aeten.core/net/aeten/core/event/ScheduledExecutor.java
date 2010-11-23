@@ -17,8 +17,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.aeten.core.ConfigurationException;
 import net.aeten.core.Identifiable;
+import net.aeten.core.service.Provider;
 import net.aeten.core.util.StringUtil;
 
+@Provider(ScheduledExecutorService.class)
 public class ScheduledExecutor implements ScheduledExecutorService, Identifiable {
 	private static final String IDENTIFIER_OPTION = "--identifier";
 	private static final String CORE_POOL_SIZE_OPTION = "--core-pool-size";
