@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.aeten.core.ConfigurationException;
 import net.aeten.core.Identifiable;
-import net.aeten.core.service.Provider;
+import net.aeten.core.spi.Provider;
 import net.aeten.core.util.StringUtil;
 
 @Provider(ScheduledExecutorService.class)

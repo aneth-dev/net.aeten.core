@@ -1,4 +1,4 @@
-package net.aeten.core.service;
+package net.aeten.core.spi;
 
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;

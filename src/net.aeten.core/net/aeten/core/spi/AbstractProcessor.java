@@ -1,4 +1,4 @@
-package net.aeten.core.processor;
+package net.aeten.core.spi;
 
 import java.io.BufferedReader;
 import java.io.File;

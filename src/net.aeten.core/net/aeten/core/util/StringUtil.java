@@ -19,7 +19,7 @@ public class StringUtil {
 			return new String[] {};
 		}
 
-		final LinkedList<String> output = new LinkedList<String>();
+		final LinkedList<String> output = new LinkedList<>();
 
 		int begin;
 		int end;

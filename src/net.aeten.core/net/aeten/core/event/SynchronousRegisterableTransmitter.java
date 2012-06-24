@@ -1,27 +1,37 @@
 package net.aeten.core.event;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
+import net.aeten.core.Factory;
 import net.aeten.core.logging.LogLevel;
 import net.aeten.core.logging.Logger;
-import net.aeten.core.util.CollectionUtil;
+import net.aeten.core.util.Concurrents;
+import net.aeten.core.util.Concurrents.AtomicComparator;
+import net.jcip.annotations.ThreadSafe;
 
 /**
  * 
  * @author Thomas Pérennou
  */
+@ThreadSafe
 class SynchronousRegisterableTransmitter<Event, Data extends EventData<?, Event>> implements RegisterableTransmitter<Event, Data> {
 
-	private final ConcurrentMap<Event, List<Handler<Data>>> eventHandlerMap;
+	private final Map<Event, List<Handler<Data>>> eventHandlerMap;
 	private final List<Handler<Data>> allEventsHandlerList;
 
-	public SynchronousRegisterableTransmitter() {
-		eventHandlerMap = new ConcurrentHashMap<Event, List<Handler<Data>>>();
-		allEventsHandlerList = new CopyOnWriteArrayList<Handler<Data>>();
+	public SynchronousRegisterableTransmitter(Event[] events) {
+		Factory<List<Handler<Data>>, Object> handlerListFactory = new Factory<List<Handler<Data>>, Object>() {
+			@Override
+			public List<Handler<Data>> create(Object event) {
+				return new CopyOnWriteArrayList<Handler<Data>>();
+			}
+		};
+		// eventHandlerMap = Collections.filledMap(events, handlerListFactory);
+		eventHandlerMap = Concurrents.concurrentFilledMap(AtomicComparator.REFESENCE, events, handlerListFactory);
+		allEventsHandlerList = handlerListFactory.create(null);
 	}
 
 	@Override
@@ -30,7 +40,7 @@ class SynchronousRegisterableTransmitter<Event, Data extends EventData<?, Event>
 			allEventsHandlerList.add(eventHandler);
 		} else {
 			for (Event event : eventList) {
-				CollectionUtil.putIfAbsent(eventHandlerMap, event, new CopyOnWriteArrayList<Handler<Data>>()).add(eventHandler);
+				eventHandlerMap.get(event).add(eventHandler);
 			}
 		}
 	}
@@ -41,12 +51,10 @@ class SynchronousRegisterableTransmitter<Event, Data extends EventData<?, Event>
 			allEventsHandlerList.remove(eventHandler);
 			return;
 		}
-		synchronized (this.eventHandlerMap) {
-			for (Event event : eventList) {
-				final List<Handler<Data>> handlers = this.eventHandlerMap.get(event);
-				if (handlers != null) {
-					handlers.remove(eventHandler);
-				}
+		for (Event event : eventList) {
+			final List<Handler<Data>> handlers = eventHandlerMap.get(event);
+			if (handlers != null) {
+				handlers.remove(eventHandler);
 			}
 		}
 	}

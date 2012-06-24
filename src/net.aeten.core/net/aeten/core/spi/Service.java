@@ -1,4 +1,4 @@
-package net.aeten.core.service;
+package net.aeten.core.spi;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,7 +14,7 @@ import net.aeten.core.Predicate;
 import net.aeten.core.logging.LogLevel;
 import net.aeten.core.logging.Logger;
 
-/** 
+/**
  * @author Thomas Pérennou
  */
 public class Service {
@@ -22,7 +22,7 @@ public class Service {
 	private static ConcurrentMap<Class<?>, Collection<?>> hotpluggedProvidersMap = new ConcurrentHashMap<Class<?>, Collection<?>>();
 
 	static {
-		boolean atLeastOne = false; 
+		boolean atLeastOne = false;
 		for (ServiceLoader loader : implementations) {
 			Logger.log(Service.class, LogLevel.INFO, "ServiceLoader implementation: " + loader.getClass());
 			atLeastOne = true;
@@ -31,7 +31,7 @@ public class Service {
 			Logger.log(Service.class, LogLevel.WARN, "None ServiceLoader implementation");
 		}
 	}
-	
+
 	public static <S> void reload(Class<S> service) {
 		Collection<?> services = hotpluggedProvidersMap.get(service);
 		if (services != null) {
@@ -41,43 +41,68 @@ public class Service {
 			loader.reload(service);
 		}
 	}
+
 	public static <S> void reload() {
 		hotpluggedProvidersMap.clear();
 		for (ServiceLoader loader : implementations) {
 			loader.reloadAll();
 		}
 	}
-	
+
 	/**
 	 * @return The registered providers for a given service.
 	 * @param service
 	 *            the provided service
 	 */
 	public static <S extends Identifiable> S getProvider(Class<S> service, ClassLoader classLoader, String identifier) {
-		for (S provider : getProviders(service, classLoader)) {
+		for (S provider : getProviders(service, classLoader, new Predicate<Class<S>>() {
+			@Override
+			public boolean matches(Class<S> element) {
+				return true;
+			}
+		})) {
 			if (identifier.equals(provider.getIdentifier())) {
 				return provider;
 			}
 		}
 		throw new NoSuchElementException("Unable to find provider for service " + service.getName() + " witch is identify by " + identifier);
 	}
-	
+
 	public static <S extends Identifiable> S getProvider(Class<S> service, String identifier) {
 		return getProvider(service, Thread.currentThread().getContextClassLoader(), identifier);
 	}
-		
-	public static <S> S getProvider(Class<S> service, ClassLoader classLoader, Predicate<S> predicate) {
-		for (S provider : getProviders(service, classLoader)) {
-			if (predicate.matches(provider)) {
+
+	public static <S> S getProvider(Class<S> service, ClassLoader classLoader, Predicate<Class<S>> classPredicate, Predicate<S> instancePredicate) {
+		for (S provider : getProviders(service, classLoader, classPredicate)) {
+			if (instancePredicate.matches(provider)) {
 				return provider;
 			}
 		}
 		throw new NoSuchElementException("Unable to find provider for service " + service.getName());
 	}
-	public static <S> S getProvider(Class<S> service, Predicate<S> predicate) {
-		return getProvider(service, Thread.currentThread().getContextClassLoader(), predicate);
+
+	public static <S> S getProvider(Class<S> service, Predicate<S> instancePredicate) {
+		return getProvider(service, Thread.currentThread().getContextClassLoader(), new Predicate<Class<S>>() {
+			@Override
+			public boolean matches(Class<S> element) {
+				return true;
+			}
+		}, instancePredicate);
 	}
-	
+
+	public static <S> S getProvider(Class<S> service, Predicate<Class<S>> classPredicate, Predicate<S> instancePredicate) {
+		return getProvider(service, Thread.currentThread().getContextClassLoader(), classPredicate, instancePredicate);
+	}
+
+	public static <S> Iterable<S> getProviders(Class<S> service, ClassLoader classLoader) {
+		return getProviders(service, classLoader, new Predicate<Class<S>>() {
+			@Override
+			public boolean matches(Class<S> element) {
+				return true;
+			}
+		});
+	}
+
 	/**
 	 * @return The registered providers for a given service.
 	 * @param service
@@ -95,8 +120,8 @@ public class Service {
 	 * @param service
 	 *            the provided service
 	 */
-	public static <S> Iterable<S> getProviders(Class<S> service, ClassLoader classLoader) {
-		return new ServiceIterableAdapter<S>(service, classLoader);
+	public static <S> Iterable<S> getProviders(Class<S> service, ClassLoader classLoader, Predicate<Class<S>> predicate) {
+		return new ServiceIterableAdapter<S>(service, classLoader, predicate);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -111,32 +136,35 @@ public class Service {
 		}
 		providers.add(provider);
 	}
-	
+
 	private static class ServiceIterableAdapter<T> implements Iterable<T> {
 		private final Iterator<T> hotpluggedServices;
 		private final Class<T> service;
 		private final ClassLoader classLoader;
-		
+		private final Predicate<Class<T>> predicate;
+
 		@SuppressWarnings("unchecked")
-		public ServiceIterableAdapter(Class<T> service, ClassLoader classLoader) {
-			Collection<T> hotpluggedProviders = (Collection<T>)hotpluggedProvidersMap.get(service);
-			this.hotpluggedServices = (hotpluggedProviders == null) ? (Iterator<T>)Collections.EMPTY_LIST.iterator() : hotpluggedProviders.iterator();
+		public ServiceIterableAdapter(Class<T> service, ClassLoader classLoader, Predicate<Class<T>> predicate) {
+			Collection<T> hotpluggedProviders = (Collection<T>) hotpluggedProvidersMap.get(service);
+			this.hotpluggedServices = (hotpluggedProviders == null) ? (Iterator<T>) Collections.EMPTY_LIST.iterator() : hotpluggedProviders.iterator();
 			this.service = service;
 			this.classLoader = classLoader;
+			this.predicate = predicate;
 		}
-		
+
 		@Override
 		public Iterator<T> iterator() {
-			return new Iterator<T> () {
+			return new Iterator<T>() {
 				private final Iterator<Iterator<T>> loadersIterator;
 				private volatile Iterator<T> iterator = hotpluggedServices;
 				{
 					Collection<Iterator<T>> loaders = new ArrayList<Iterator<T>>();
 					for (ServiceLoader loader : implementations) {
-						loaders.add(loader.getProviders(service, classLoader).iterator());
+						loaders.add(loader.getProviders(service, classLoader, predicate).iterator());
 					}
 					loadersIterator = loaders.iterator();
 				}
+
 				@Override
 				public boolean hasNext() {
 					if (iterator.hasNext()) {
@@ -168,8 +196,7 @@ public class Service {
 				}
 			};
 		}
-		
-	}
 
+	}
 
 }

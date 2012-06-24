@@ -10,7 +10,7 @@ public class ParsingData<NodeType extends Enum<?>> extends EventData<net.aeten.c
 	private final NodeType nodeType;
 	private final String value, parent;
 
-	public ParsingData(net.aeten.core.parsing.Parser<NodeType> source, ParsingEvent event, NodeType nodeType, String value, String parent) {
+	public ParsingData(Parser<NodeType> source, ParsingEvent event, NodeType nodeType, String value, String parent) {
 		super(source, event);
 		this.nodeType = nodeType;
 		this.value = value;

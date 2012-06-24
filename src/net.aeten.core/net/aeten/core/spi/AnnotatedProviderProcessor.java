@@ -1,16 +1,18 @@
-package net.aeten.core.service.processor;
+package net.aeten.core.spi;
 
-import static javax.lang.model.SourceVersion.RELEASE_6;
+import static javax.lang.model.SourceVersion.RELEASE_7;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
@@ -32,23 +34,17 @@ import net.aeten.core.logging.Logger;
 import net.aeten.core.parsing.MarkupConverter;
 import net.aeten.core.parsing.MarkupNode;
 import net.aeten.core.parsing.Parser;
-import net.aeten.core.processor.AbstractProcessor;
-import net.aeten.core.service.Configuration;
-import net.aeten.core.service.Configurations;
-import net.aeten.core.service.Configured;
-import net.aeten.core.service.Provider;
-import net.aeten.core.service.Service;
 
 /**
  * 
  * @author Thomas Pérennou
  */
 @Provider(Processor.class)
-@SupportedAnnotationTypes( { "net.aeten.core.service.Provider", "javax.annotation.Generated", "net.aeten.core.service.Configurations", "net.aeten.core.service.Configuration" })
-@SupportedSourceVersion(RELEASE_6)
+@SupportedAnnotationTypes( { "net.aeten.core.spi.Provider", "javax.annotation.Generated", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration" })
+@SupportedSourceVersion(RELEASE_7)
 public class AnnotatedProviderProcessor extends AbstractProcessor {
 
-	private final Map<String, FileObject> servicesFileObjects = new ConcurrentHashMap<String, FileObject>();
+	private static final Map<String, FileObject> servicesFileObjects = Collections.synchronizedMap(new HashMap<String, FileObject>());
 
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -59,6 +55,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+
 
 		for (Element element : roundEnv.getElementsAnnotatedWith(Configurations.class)) {
 			if (element.getAnnotation(Configured.class) == null) {
@@ -108,7 +105,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 		String provider = providerElement.getQualifiedName().toString();
 		String converter = (String) getAnnotationValue(configuration, "converter").getValue();
 		String parser = getAnnotationValue(configuration, "parser").getValue().toString();
-		List<String> services = new ArrayList<String>();
+		List<String> services = new ArrayList<>();
 		for (AnnotationMirror serviceAnnotation : getAnnotationMirrors(providerElement, Provider.class)) {
 			AnnotationValue annotationValue = getAnnotationValue(serviceAnnotation);
 			for (AnnotationValue value : (Iterable<AnnotationValue>) annotationValue.getValue()) {
@@ -121,6 +118,9 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 		PrintWriter writer = null;
 		try {
 			String className = name;
+			debug("Configuration");
+			URL file = getClass().getClassLoader().getResource("net/aeten/core/messenger/test/server.aeml");
+			debug("Configuration = " + file);
 			writer = getWriter(processingEnv.getFiler().createSourceFile(pkg + "." + className, element), WriteMode.CREATE, false);
 
 			String parentProvider = toElement(getAnnotationValue(element, Configuration.class, "provider")).getQualifiedName().toString();
@@ -211,7 +211,6 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				}
 
 				writer.println("      } catch (Throwable error) {");
-				writer.println("         error.printStackTrace();");
 				writer.println("         Logger.log(this, LogLevel.ERROR, error);");
 				writer.println("      }");
 				writer.println("   }");
@@ -239,9 +238,16 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				String service = value.getValue().toString();
 
 				try {
-					FileObject fileObject = servicesFileObjects.get(service);
-					if (fileObject == null) {
-						fileObject = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + service);
+					FileObject fileObject;
+					synchronized (servicesFileObjects) {
+						fileObject = servicesFileObjects.get(service);
+						if (fileObject == null) {
+							try {
+								fileObject = processingEnv.getFiler().createResource(StandardLocation.SOURCE_OUTPUT, "", "META-INF/services/" + service);
+							} catch (Exception exception) {
+								fileObject = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + service);
+							}
+						}
 						servicesFileObjects.put(service, fileObject);
 					}
 
@@ -265,6 +271,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 						}
 					} catch (FileNotFoundException exception) {
 						fileObject = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + service);
+                                                servicesFileObjects.put(service, fileObject);
 					}
 					PrintWriter writer = getWriter(fileObject, WriteMode.APPEND, true);
 					try {
@@ -347,12 +354,12 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 			}
 		}
 	}
-	
+
 	private static String getClassName(AnnotationValue configurationFileNameAnnotationValue) {
 		String configurationFileName = (String) configurationFileNameAnnotationValue.getValue();
 		return configurationFileName.substring(0, configurationFileName.lastIndexOf('.')).replace('.', '_');
 	}
-	
+
 	private static String getFormat(AnnotationValue configurationFileNameAnnotationValue) {
 		String configurationFileName = (String) configurationFileNameAnnotationValue.getValue();
 		return configurationFileName.substring(configurationFileName.lastIndexOf('.') + 1);

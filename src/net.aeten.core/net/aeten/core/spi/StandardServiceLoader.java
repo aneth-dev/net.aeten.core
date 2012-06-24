@@ -1,7 +1,9 @@
-package net.aeten.core.service;
+package net.aeten.core.spi;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import net.aeten.core.Predicate;
 
 /**
  * 
@@ -9,11 +11,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Provider(ServiceLoader.class)
 public class StandardServiceLoader implements ServiceLoader {
-	private ConcurrentMap<Class<?>, java.util.ServiceLoader<?>> serviceLoader = new ConcurrentHashMap<Class<?>, java.util.ServiceLoader<?>>();
+	private final ConcurrentMap<Class<?>, java.util.ServiceLoader<?>> serviceLoader = new ConcurrentHashMap<Class<?>, java.util.ServiceLoader<?>>();
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public <S> Iterable<S> getProviders(Class<S> service, ClassLoader classLoader) {
+	public <S> Iterable<S> getProviders(Class<S> service, ClassLoader classLoader, Predicate<Class<S>> predicate) {
 		// XXX Make a key with service and class loader ?
 		java.util.ServiceLoader<?> loader = serviceLoader.get(service);
 		if (loader == null) {
