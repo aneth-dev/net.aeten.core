@@ -157,9 +157,13 @@ public class Concurrents {
 	}
 
 	public static <K, V> V putIfAbsentAndGet(ConcurrentMap<K, V> map, K key, Factory<V, ? super K> valueFactory) {
-		V update = valueFactory.create(key);
-		V previous = map.putIfAbsent(key, update);
-		return (previous == null) ? update : previous;
+		V previous = map.get(key);
+		if (previous == null) {
+			V update = valueFactory.create(key);
+			previous = map.putIfAbsent(key, update);
+			return (previous == null) ? update : previous;
+		}
+		return previous;
 	}
 
 	/** Thread unsafe */
@@ -169,9 +173,8 @@ public class Concurrents {
 			V update = valueFactory.create(key);
 			map.put(key, update);
 			return update;
-		} else {
-			return previous;
 		}
+		return previous;
 	}
 
 	/** Thread unsafe */
@@ -180,9 +183,8 @@ public class Concurrents {
 		if (previous == null) {
 			map.put(key, update);
 			return update;
-		} else {
-			return previous;
 		}
+		return previous;
 	}
 
 	public static <K, V> V putIfAbsentAndGet(Map<K, V> map, K key, V update, Object lock) {
@@ -239,21 +241,21 @@ public class Concurrents {
 
 	public static <K, V> ConcurrentMap<K, V> concurrentFilledMap(AtomicComparator comparator, K[] keys, final V initialValue) {
 		Class<?> type = keys.getClass().getComponentType();
-		if (type.isEnum()) {
+		if (type.isEnum())
 			return new ConcurrentKnownKeysMap<K, V>(keys, new Factory<Integer, K>() {
 				@Override
 				public Integer create(K context) {
 					return ((Enum<?>) context).ordinal();
 				}
 			}, comparator, initialValue);
-		} else if (EnumElement.class.isAssignableFrom(type)) {
+		else if (EnumElement.class.isAssignableFrom(type))
 			return new ConcurrentKnownKeysMap<K, V>(keys, new Factory<Integer, K>() {
 				@Override
 				public Integer create(K context) {
 					return ((EnumElement<?>) context).ordinal();
 				}
 			}, comparator, initialValue);
-		} else {
+		else {
 			ConcurrentHashMap<K, V> map = new ConcurrentHashMap<K, V>(keys.length);
 			for (K key : keys) {
 				map.put(key, initialValue);
@@ -264,21 +266,21 @@ public class Concurrents {
 
 	public static <K, V> ConcurrentMap<K, V> concurrentFilledMap(AtomicComparator comparator, K[] keys, Factory<V, ? super K> initialValue) {
 		Class<?> type = keys.getClass().getComponentType();
-		if (type.isEnum()) {
+		if (type.isEnum())
 			return new ConcurrentKnownKeysMap<K, V>(keys, new Factory<Integer, K>() {
 				@Override
 				public Integer create(K context) {
 					return ((Enum<?>) context).ordinal();
 				}
 			}, comparator, initialValue);
-		} else if (EnumElement.class.isAssignableFrom(type)) {
+		else if (EnumElement.class.isAssignableFrom(type))
 			return new ConcurrentKnownKeysMap<K, V>(keys, new Factory<Integer, K>() {
 				@Override
 				public Integer create(K context) {
 					return ((EnumElement<?>) context).ordinal();
 				}
 			}, comparator, initialValue);
-		} else {
+		else {
 			ConcurrentHashMap<K, V> map = new ConcurrentHashMap<K, V>(keys.length);
 			for (K key : keys) {
 				map.put(key, initialValue.create(key));
@@ -312,23 +314,22 @@ public class Concurrents {
 				return null;
 			}
 		};
-		if (type.isEnum()) {
+		if (type.isEnum())
 			return new ConcurrentKnownKeysMap<K, V>(keys, new Factory<Integer, K>() {
 				@Override
 				public Integer create(K context) {
 					return ((Enum<?>) context).ordinal();
 				}
 			}, comparator, initialValue);
-		} else if (EnumElement.class.isAssignableFrom(type)) {
+		else if (EnumElement.class.isAssignableFrom(type))
 			return new ConcurrentKnownKeysMap<K, V>(keys, new Factory<Integer, K>() {
 				@Override
 				public Integer create(K context) {
 					return ((EnumElement<?>) context).ordinal();
 				}
 			}, comparator, initialValue);
-		} else {
+		else
 			return new ConcurrentHashMap<K, V>(keys.length);
-		}
 	}
 
 }

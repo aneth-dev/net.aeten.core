@@ -40,7 +40,7 @@ import net.aeten.core.parsing.Parser;
  * @author Thomas Pérennou
  */
 @Provider(Processor.class)
-@SupportedAnnotationTypes( { "net.aeten.core.spi.Provider", "javax.annotation.Generated", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration" })
+@SupportedAnnotationTypes({ "net.aeten.core.spi.Provider", "javax.annotation.Generated", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration" })
 @SupportedSourceVersion(RELEASE_7)
 public class AnnotatedProviderProcessor extends AbstractProcessor {
 
@@ -55,7 +55,6 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-
 
 		for (Element element : roundEnv.getElementsAnnotatedWith(Configurations.class)) {
 			if (element.getAnnotation(Configured.class) == null) {
@@ -154,7 +153,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				writer.print("@" + Provider.class.getSimpleName() + ((services.size() > 1) ? "({" : "("));
 				for (int i = 0; i < services.size(); i++) {
 					writer.print(services.get(i) + ".class");
-					if (i < services.size() - 1) {
+					if (i < (services.size() - 1)) {
 						writer.write(", ");
 					}
 				}
@@ -185,7 +184,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 					if (converter.isEmpty()) {
 						writer.println("         Predicate<MarkupConverter> converterPredicate = new Predicate<MarkupConverter>() {");
 						writer.println("            @Override");
-						writer.println("            public boolean matches(MarkupConverter element) {");
+						writer.println("            public boolean evaluate(MarkupConverter element) {");
 						writer.println("               Format format = element.getClass().getAnnotation(Format.class);");
 						writer.println("               return (format != null) && format.value().equals(\"" + outputFormat + "\");");
 						writer.println("            }");
@@ -197,7 +196,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 					if (parser.isEmpty()) {
 						writer.println("         Predicate<Parser> parserPredicate = new Predicate<Parser>() {");
 						writer.println("            @Override");
-						writer.println("            public boolean matches(Parser element) {");
+						writer.println("            public boolean evaluate(Parser element) {");
 						writer.println("               Format format = element.getClass().getAnnotation(Format.class);");
 						writer.println("               return (format != null) && format.value().equals(\"" + inputFormat + "\");");
 						writer.println("            }");
@@ -271,7 +270,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 						}
 					} catch (FileNotFoundException exception) {
 						fileObject = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + service);
-                                                servicesFileObjects.put(service, fileObject);
+						servicesFileObjects.put(service, fileObject);
 					}
 					PrintWriter writer = getWriter(fileObject, WriteMode.APPEND, true);
 					try {
@@ -335,7 +334,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				writer.print("@" + Provider.class.getSimpleName() + ((services.size() > 1) ? "({" : "("));
 				for (int i = 0; i < services.size(); i++) {
 					writer.print(services.get(i) + ".class");
-					if (i < services.size() - 1) {
+					if (i < (services.size() - 1)) {
 						writer.write(", ");
 					}
 				}
