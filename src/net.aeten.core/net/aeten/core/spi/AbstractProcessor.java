@@ -23,8 +23,8 @@ import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
-import javax.tools.FileObject;
 import javax.tools.Diagnostic.Kind;
+import javax.tools.FileObject;
 
 import net.aeten.core.logging.LogLevel;
 
@@ -41,35 +41,10 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 			if (!file.exists()) {
 				file.getParentFile().mkdirs();
 			}
-			if (file.exists() && !file.isDirectory() && (mode == WriteMode.CREATE)) {
-				throw new IOException("File \"" + file + "\" already exist");
-			}
+			if (file.exists() && !file.isDirectory() && (mode == WriteMode.CREATE)) throw new IOException("File \"" + file + "\" already exist");
 
-			if (mode == WriteMode.APPEND) {
-				return new PrintWriter(new FileWriter(file, false));
-				// return new PrintWriter(fileObject.openOutputStream(),
-				// autoFlush);
-				// try {
-				// BufferedReader reader = getReader(fileObject);
-				// StringWriter copy = new StringWriter();
-				// PrintWriter writer = new PrintWriter(copy);
-				// String line;
-				// while((line = reader.readLine()) != null) {
-				// writer.println(line);
-				// }
-				// // writer = new PrintWriter(fileObject.openOutputStream(),
-				// autoFlush);
-				// writer = new PrintWriter(fileObject.openWriter(), autoFlush);
-				// writer.write(copy.toString());
-				// return writer;
-				// } catch (FileNotFoundException exception) {
-				//
-				// }
-			}
+			if (mode == WriteMode.APPEND) return new PrintWriter(new FileWriter(file, false));
 			return new PrintWriter(fileObject.openOutputStream(), autoFlush);
-			// return new PrintWriter(fileObject.openWriter(), autoFlush);
-			// return new PrintWriter(new FileWriter(file, mode ==
-			// WriteMode.APPEND), autoFlush);
 		} catch (UnsupportedOperationException exception) {
 			return new PrintWriter(fileObject.openOutputStream(), autoFlush);
 		} catch (IllegalArgumentException exception) {
@@ -83,17 +58,13 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 
 	protected static File getFile(FileObject fileObject) {
 		URI uri = fileObject.toUri();
-		if (uri.isAbsolute()) {
-			return new File(uri);
-		}
+		if (uri.isAbsolute()) return new File(uri);
 		return new File(uri.toString());
 	}
 
 	protected AnnotationMirror getAnnotationMirror(Element element, Class<? extends Annotation> annotationClass) {
 		for (AnnotationMirror annotation : processingEnv.getElementUtils().getAllAnnotationMirrors(element)) {
-			if (annotationMirrorMatches(annotation, annotationClass)) {
-				return annotation;
-			}
+			if (annotationMirrorMatches(annotation, annotationClass)) return annotation;
 		}
 		return null;
 	}
@@ -108,7 +79,7 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 	}
 
 	protected List<AnnotationMirror> getAnnotationMirrors(Element element, Class<? extends Annotation> annotationClass) {
-		List<AnnotationMirror> annotationMirrors = new ArrayList<AnnotationMirror>();
+		List<AnnotationMirror> annotationMirrors = new ArrayList<>();
 		for (AnnotationMirror annotation : processingEnv.getElementUtils().getAllAnnotationMirrors(element)) {
 			if (annotationMirrorMatches(annotation, annotationClass)) {
 				annotationMirrors.add(annotation);
@@ -135,9 +106,7 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 
 	protected AnnotationValue getAnnotationValue(AnnotationMirror annotation, String key) {
 		for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : processingEnv.getElementUtils().getElementValuesWithDefaults(annotation).entrySet()) {
-			if (entry.getKey().getSimpleName().contentEquals(key)) {
-				return entry.getValue();
-			}
+			if (entry.getKey().getSimpleName().contentEquals(key)) return entry.getValue();
 		}
 		return null;
 	}
@@ -149,9 +118,7 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 	protected AnnotationValue getAnnotationValue(Element element, Class<? extends Annotation> annotation, String key) {
 		for (AnnotationMirror confAnnotation : getAnnotationMirrors(element, annotation)) {
 			for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> value : confAnnotation.getElementValues().entrySet()) {
-				if (value.getKey().getSimpleName().contentEquals(key)) {
-					return value.getValue();
-				}
+				if (value.getKey().getSimpleName().contentEquals(key)) return value.getValue();
 			}
 		}
 		return null;
@@ -166,28 +133,33 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 	}
 
 	protected void debug(String message) {
-		if (this.logLevel.compareTo(LogLevel.DEBUG) <= 0)
+		if (this.logLevel.compareTo(LogLevel.DEBUG) <= 0) {
 			processingEnv.getMessager().printMessage(Kind.NOTE, message);
+		}
 	}
 
 	protected void note(String message) {
-		if (this.logLevel.compareTo(LogLevel.INFO) <= 0)
+		if (this.logLevel.compareTo(LogLevel.INFO) <= 0) {
 			processingEnv.getMessager().printMessage(Kind.NOTE, message);
+		}
 	}
 
 	protected void warn(String message, Element element, AnnotationMirror annotation, AnnotationValue value) {
-		if (this.logLevel.compareTo(LogLevel.WARN) <= 0)
+		if (this.logLevel.compareTo(LogLevel.WARN) <= 0) {
 			processingEnv.getMessager().printMessage(Kind.WARNING, message, element, annotation, value);
+		}
 	}
 
 	protected void warn(String message, Element element, AnnotationMirror annotation) {
-		if (this.logLevel.compareTo(LogLevel.WARN) <= 0)
+		if (this.logLevel.compareTo(LogLevel.WARN) <= 0) {
 			processingEnv.getMessager().printMessage(Kind.WARNING, message, element, annotation);
+		}
 	}
 
 	protected void warn(String message, Element element) {
-		if (this.logLevel.compareTo(LogLevel.WARN) <= 0)
+		if (this.logLevel.compareTo(LogLevel.WARN) <= 0) {
 			processingEnv.getMessager().printMessage(Kind.WARNING, message, element);
+		}
 
 	}
 
@@ -220,4 +192,20 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 		cause.printStackTrace(new PrintWriter(stackTrace));
 		return stackTrace.toString();
 	}
+
+	protected static void writeImport(PrintWriter writer, Class<?>... classes) {
+		for (Class clazz : classes) {
+			writer.println("import " + clazz.getName() + ";");
+		}
+	}
+
+	protected static String upperFirstChar(String field) {
+		return field.substring(0, 1).toUpperCase() + field.substring(1);
+	}
+
+	protected String getFullName(Element field) {
+		String name = processingEnv.getTypeUtils().asElement(field.asType()).toString();
+		return name;
+	}
+
 }

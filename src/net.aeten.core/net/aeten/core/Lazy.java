@@ -1,9 +1,10 @@
 package net.aeten.core;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 
+ *
  * @author Thomas Pérennou
  */
 public class Lazy<T, C> {
@@ -22,7 +23,7 @@ public class Lazy<T, C> {
 					} else {
 						return clazz.getConstructor(context.getClass()).newInstance(context);
 					}
-				} catch (Exception exception) {
+				} catch (InstantiationException | IllegalAccessException | NoSuchMethodException | SecurityException | IllegalArgumentException | InvocationTargetException exception) {
 					throw new Error(exception);
 				}
 			}
@@ -35,7 +36,7 @@ public class Lazy<T, C> {
 			public T create(Void context) {
 				try {
 					return clazz.newInstance();
-				} catch (Exception exception) {
+				} catch (InstantiationException | IllegalAccessException exception) {
 					throw new Error(exception);
 				}
 			}
@@ -43,7 +44,7 @@ public class Lazy<T, C> {
 	}
 
 	public static <T, C> Lazy<T, C> build(Factory<T, C> factory, C configuration) {
-		return new Lazy<T, C>(factory, configuration);
+		return new Lazy<>(factory, configuration);
 	}
 
 	public static <T> Lazy<T, Void> build(Factory<T, Void> factory) {
@@ -53,16 +54,16 @@ public class Lazy<T, C> {
 	private Lazy(Factory<T, C> factory, C configuration) {
 		this.factory = factory;
 		this.configuration = configuration;
-		this.instance = new AtomicReference<T>();
+		this.instance = new AtomicReference<>();
 	}
 
 	public T instance() {
-		T instance = this.instance.get();
-		if (instance == null) {
+		T ref = this.instance.get();
+		if (ref == null) {
 			this.instance.compareAndSet(null, this.factory.create(this.configuration));
 			return this.instance.get();
 		}
-		return instance;
+		return ref;
 	}
 
 	public static final class Null<T> extends Lazy<T, Void> {
