@@ -5,10 +5,7 @@ import java.util.*;
 import javax.annotation.Generated;
 import javax.annotation.processing.*;
 import static javax.lang.model.SourceVersion.RELEASE_7;
-import javax.lang.model.element.AnnotationMirror;
-import javax.lang.model.element.AnnotationValue;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
@@ -19,11 +16,11 @@ import net.aeten.core.logging.LogLevel;
  * @author Thomas Pérennou
  */
 @Provider(Processor.class)
-@SupportedAnnotationTypes({ "net.aeten.core.spi.Provider", "javax.annotation.Generated", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration" , "net.aeten.core.spi.SpiInitializer"})
+@SupportedAnnotationTypes({"net.aeten.core.spi.Provider", "javax.annotation.Generated", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration", "net.aeten.core.spi.SpiInitializer"})
 @SupportedSourceVersion(RELEASE_7)
 public class AnnotatedProviderProcessor extends AbstractProcessor {
 
-	private static final Map<String, FileObject>	servicesFileObjects	= Collections.synchronizedMap(new HashMap<String, FileObject>());
+	private static final Map<String, FileObject> servicesFileObjects = Collections.synchronizedMap(new HashMap<String, FileObject>());
 
 	@Override
 	public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -164,16 +161,32 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				}
 				writer.println(((services.size() > 1) ? "})" : ")"));
 				writer.println("public class " + name + " extends " + provider + " {");
-				writer.println("	public " + name + " () {");
 				TypeMirror initializerType = null;
-				for (Element initializer : initializers) {
-					if (initializer.getEnclosingElement().getEnclosingElement().equals(providerElement)) {
-						initializerType = initializer.asType();
+				Iterator<? extends TypeMirror> thrownTypes = null;
+				for (Element enclosedElement : providerElement.getEnclosedElements()) {
+					if (enclosedElement.getKind() == ElementKind.CONSTRUCTOR) {
+						ExecutableElement constructor = (ExecutableElement) enclosedElement;
+						if (constructor.getParameters().size() == 1 && constructor.getParameters().get(0).getAnnotation(SpiInitializer.class) != null) {
+							initializerType = constructor.getParameters().get(0).asType();
+							thrownTypes = constructor.getThrownTypes().iterator();
+							break;
+						}
 					}
 				}
 				if (initializerType == null) {
-					throw new Error("SpiInitializer not found");
+					error("SpiInitializer not found in " + providerElement, element);
 				}
+				writer.print("	public " + name + " ()");
+				if (thrownTypes.hasNext()) {
+					writer.print(" throws ");
+				}
+				while (thrownTypes.hasNext()) {
+					writer.print(thrownTypes.next().toString());
+					if (thrownTypes.hasNext()) {
+						writer.print(", ");
+					}
+				}
+				writer.println(" {");
 				writer.print("		super(new " + initializerType + "(new SpiConfiguration(");
 				writer.print("\"" + pkg + "\", " + "\"" + nameAnnotationValue.getValue() + "\", " + "\"" + parser + "\", " + provider + ".class");
 				writer.println(")));");
@@ -197,5 +210,4 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 		String configurationFileName = (String) configurationFileNameAnnotationValue.getValue();
 		return configurationFileName.substring(0, configurationFileName.lastIndexOf('.')).replace('.', '_');
 	}
-
 }

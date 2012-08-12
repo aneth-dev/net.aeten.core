@@ -1,27 +1,24 @@
 package net.aeten.core.spi;
 
 import java.io.PrintWriter;
-import java.io.Writer;
+import java.lang.annotation.Annotation;
 import java.util.*;
 import javax.annotation.Generated;
-
-import javax.annotation.processing.ProcessingEnvironment;
-import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
-import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.annotation.processing.SupportedSourceVersion;
+import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
+import javax.lang.model.type.TypeMirror;
 import net.aeten.core.Factory;
-
 import net.aeten.core.logging.LogLevel;
 import net.aeten.core.parsing.Document;
 
 @Provider(Processor.class)
-@SupportedAnnotationTypes({ "net.aeten.core.spi.SpiInitializer", "net.aeten.core.spi.FieldInit" })
+@SupportedAnnotationTypes({"net.aeten.core.spi.SpiInitializer", "net.aeten.core.spi.FieldInit"})
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class FieldInitializationProcessor extends AbstractProcessor {
 
@@ -42,7 +39,7 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 			try (PrintWriter writer = getWriter(processingEnv.getFiler().createSourceFile(pkg + "." + clazz, initializer), AbstractProcessor.WriteMode.CREATE, false)) {
 				writer.println("package " + pkg + ";");
 				writer.println();
-				writeImport(writer, HashMap.class, Map.class, Generated.class, Factory.class, Document.class, FieldInitFactory.class, SpiConfiguration.class);
+				writeImport(writer, List.class, ArrayList.class, HashMap.class, Map.class, Generated.class, Factory.class, Document.class, FieldInitFactory.class, SpiConfiguration.class);
 				writer.println();
 				writer.println("@Generated(\"" + FieldInitializationProcessor.class.getName() + "\")");
 				writer.println("public class " + clazz + " {");
@@ -53,44 +50,60 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 				writer.println("		for (Document.Tag tag : configuration.root.tags) {");
 				writer.println("			final String field;");
 				writer.println("			final Class<?> type;");
+				writer.println("			final List<Class<?>> parameterizedTypes = new ArrayList<>();");
 				writer.println("			switch (tag.name) {");
-				for (Element fieldInit : roundEnv.getElementsAnnotatedWith(FieldInit.class)) {
-					AnnotationValue aliasValue = getAnnotationValue(fieldInit, FieldInit.class, "alias");
-					if (aliasValue != null) {
-						for (String alias : (String[]) aliasValue.getValue()) {
-							writer.println("			case \"" + alias + "\":");
-						}
-					} else {
+				Element objectElement = processingEnv.getElementUtils().getTypeElement("java.lang.Object");
+				for (Element element = getEnclosingClass(initializer); !element.equals(objectElement); element = superTypeElement(element)) {
+					for (Element fieldInit : getElementsAnnotatedWith(element, FieldInit.class)) {
+						List<String> words = splitCamelCase(fieldInit.toString());
 						writer.println("			case \"" + fieldInit.toString() + "\":");
+						if (words.size() > 1) {
+							writer.println("			case \"" + join(words, ' ') + "\":");
+							writer.println("			case \"" + join(words, '-') + "\":");
+							writer.println("			case \"" + join(words, '_') + "\":");
+						}
+						AnnotationValue aliasValue = getAnnotationValue(fieldInit, FieldInit.class, "alias");
+						if (aliasValue != null) {
+							for (Object aliasObject : (Iterable<?>) aliasValue.getValue()) {
+								String alias = aliasObject.toString().replace('"', ' ').trim();
+								writer.println("			case \"" + alias + "\":");
+								if (alias.contains(" ")) {
+									writer.println("			case \"" + alias.replace(' ', '-') + "\":");
+									writer.println("			case \"" + alias.replace(' ', '_') + "\":");
+								}
+							}
+						}
+						writer.println("				field = \"" + fieldInit.toString() + "\";");
+						writer.println("				type = " + getType(fieldInit) + ".class;");
+						TypeMirror type = fieldInit.asType();
+						if (type instanceof DeclaredType) {
+							for (TypeMirror parameterized : ((DeclaredType) type).getTypeArguments()) {
+								if (parameterized.getKind() == TypeKind.DECLARED) {
+									String className = (parameterized instanceof DeclaredType) ? ((DeclaredType) parameterized).asElement().toString() : parameterized.toString();
+									writer.println(String.format("				parameterizedTypes.add(%s.class);", className));
+								}
+							}
+						}
+						writer.println("				break;");
 					}
-					writer.println("				field = tag.name;");
-					writer.println("				type = " + getFullName(fieldInit) + ".class;");
-					writer.println("				break;");
 				}
 				writer.println("			default:");
-				writer.println("				throw new IllegalArgumentException(\"No field \" + tag);");
+				writer.println("				throw new IllegalArgumentException(String.format(\"No field named as %s\", tag));");
 				writer.println("			}");
-				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(tag, type, SpiTestInitializer.class.getClassLoader()));");
+
+				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(tag, type, parameterizedTypes, " + clazz + ".class.getClassLoader()));");
 				writer.println("		}");
-
-
 				writer.println("	}");
 
-				for (Element fieldInit : roundEnv.getElementsAnnotatedWith(FieldInit.class)) {
-					String fildName = fieldInit.toString();
-					if ("configuration".equals(fildName)) {
-						error(String.format("Reserved field name for %s annotated fields", FieldInit.class), fieldInit);
-					}
-					// Find class element
-					Element parent;
-					for (parent = initializer.getEnclosingElement(); parent.getKind() != ElementKind.CLASS; parent = parent.getEnclosingElement()) {}
-					if (fieldInit.getEnclosingElement().equals(parent)) {
-						clazz = getFullName(fieldInit);
+				for (Element element = getEnclosingClass(initializer); !element.equals(objectElement); element = superTypeElement(element)) {
+					for (Element fieldInit : getElementsAnnotatedWith(getEnclosingClass(element), FieldInit.class)) {
+						String fildName = fieldInit.toString();
+						clazz = getType(fieldInit);
 						writer.println("	public " + clazz + " get" + upperFirstChar(fildName) + "() {");
 						writer.println("		return (" + clazz + ") fieldsFactories.get(\"" + fildName + "\").create(null);");
 						writer.println("	}");
 						AnnotationValue isRequiredValue = getAnnotationValue(fieldInit, FieldInit.class, "required");
-						if (!((isRequiredValue != null) && ((Boolean) isRequiredValue.getValue() == true))) {
+						if ((isRequiredValue != null) && ((Boolean) isRequiredValue.getValue() == false)) {
 							writer.println("	public boolean has" + upperFirstChar(fildName) + "() {");
 							writer.println("		return fieldsFactories.containsKey(\"" + fildName + "\");");
 							writer.println("	}");
@@ -106,4 +119,55 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 		return false;
 	}
 
+	private List<String> splitCamelCase(String string) {
+		List<String> result = new ArrayList<>();
+		String word = "";
+		for (char c : string.toCharArray()) {
+			if (Character.isLowerCase(c)) {
+				word += c;
+			} else {
+				if (!word.isEmpty()) {
+					result.add(word);
+				}
+				word = "" + Character.toLowerCase(c);
+			}
+		}
+		result.add(word);
+		return result;
+	}
+
+	private String join(List<String> words, char separator) {
+		String string = "";
+		Iterator<String> iterator = words.iterator();
+		while (iterator.hasNext()) {
+			string += iterator.next();
+			if (iterator.hasNext()) {
+				string += separator;
+			}
+		}
+		return string;
+	}
+
+	static Element getEnclosingClass(Element element) {
+		while (element.getKind() != ElementKind.CLASS) {
+			element = element.getEnclosingElement();
+		}
+		return element;
+	}
+
+	Element superTypeElement(Element element) {
+		TypeElement typeElement = processingEnv.getElementUtils().getTypeElement(element.toString());
+		TypeMirror superType = processingEnv.getTypeUtils().directSupertypes(typeElement.asType()).get(0);
+		return processingEnv.getTypeUtils().asElement(superType);
+	}
+
+	static List<Element> getElementsAnnotatedWith(Element classElement, Class<? extends Annotation> annotation) {
+		List<Element> elements = new ArrayList<>();
+		for (Element element : classElement.getEnclosedElements()) {
+			if (element.getAnnotation(annotation) != null) {
+				elements.add(element);
+			}
+		}
+		return elements;
+	}
 }

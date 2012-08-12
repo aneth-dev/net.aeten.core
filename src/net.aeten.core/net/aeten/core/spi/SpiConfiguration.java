@@ -38,8 +38,6 @@ public class SpiConfiguration {
 		} else {
 			parser = (Parser<MarkupNode>) Service.getProvider(Parser.class, parserIdentifier);
 		}
-		System.out.println(instanceClass);
-		System.out.println(resource);
 		this.root = Document.load(new InputStreamReader(instanceClass.getClassLoader().getResourceAsStream(resource)), parser).root;
 
 	}

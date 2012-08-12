@@ -30,7 +30,7 @@ public class Document {
 	public static class Entry {
 		public final Entry parent;
 		public final Document document;
-		public final Queue<Tag> tags = Collections.asLifoQueue(new ArrayDeque<Tag>());
+		public final List<Tag> tags = new ArrayList<>();
 
 		public Entry(Document document) {
 			this.parent = null;
@@ -40,40 +40,50 @@ public class Document {
 			this.parent = parent;
 			this.document = parent.document;
 		}
+
+		@Override
+		public String toString() {
+			return tags.toString();
+		}
+		
 	}
 
 	public static Document load(Reader reader, Parser<MarkupNode> parser) {
 		final Document document = new Document();
  		parser.parse(reader, new Handler<ParsingData<MarkupNode>>() {
-			Document.Entry entry = document.root;
+			Document.Entry entry = null;
+			final Queue<Document.Entry> currentEntry = Collections.asLifoQueue(new ArrayDeque<Document.Entry>());
+			Document.Tag currentTag = null;
+
 			@Override
 			public void handleEvent(ParsingData<MarkupNode> data) {
 				switch (data.getEvent()) {
 				case START_NODE:
 					switch (data.getNodeType()) {
 					case TEXT:
-						entry.tags.peek().value = data.getValue();
+						currentTag.value = data.getValue();
 						break;
 					case MAP:
 					case LIST:
+						entry = entry == null ? document.root : new Document.Entry(entry);
 						if (entry != document.root) {
-							Document.Entry value = new Document.Entry(entry);
-							entry.tags.peek().value = value;
-							entry = value;
+							currentTag.value = entry;
 						}
+						currentEntry.add(entry);
 						break;
 					case TYPE:
-						entry.tags.peek().type = data.getValue();
+						currentTag.type = data.getValue();
 						break;
 					case TAG:
-						entry.tags.add(new Document.Tag(data.getValue()));
+						currentTag = new Document.Tag(data.getValue());
+						entry.tags.add(currentTag);
 						break;
 					case ANCHOR:
-						entry.document.anchors.put(data.getValue(), entry.tags.peek());
+						entry.document.anchors.put(data.getValue(), currentTag);
 						break;
 					case REFERENCE:
 						Document.Tag ref = entry.document.anchors.get(data.getValue());
-						Document.Tag tag = entry.tags.peek();
+						Document.Tag tag = currentTag;
 						tag.value = ref.value;
 						tag.type = ref.type;
 						break;
@@ -85,7 +95,8 @@ public class Document {
 					switch (data.getNodeType()) {
 					case MAP:
 					case LIST:
-						entry = entry.parent;
+						currentEntry.poll();
+						entry = currentEntry.peek();
 						break;
 					default:
 						break;

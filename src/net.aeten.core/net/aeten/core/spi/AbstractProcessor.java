@@ -12,6 +12,7 @@ import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +23,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
@@ -29,10 +31,11 @@ import javax.tools.FileObject;
 import net.aeten.core.logging.LogLevel;
 
 public abstract class AbstractProcessor extends javax.annotation.processing.AbstractProcessor {
+
 	public static enum WriteMode {
+
 		CREATE, APPEND, OVERRIDE
 	}
-
 	protected volatile LogLevel logLevel = LogLevel.INFO;
 
 	public static PrintWriter getWriter(FileObject fileObject, WriteMode mode, boolean autoFlush) throws IllegalArgumentException, IOException {
@@ -41,9 +44,13 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 			if (!file.exists()) {
 				file.getParentFile().mkdirs();
 			}
-			if (file.exists() && !file.isDirectory() && (mode == WriteMode.CREATE)) throw new IOException("File \"" + file + "\" already exist");
+			if (file.exists() && !file.isDirectory() && (mode == WriteMode.CREATE)) {
+				throw new IOException("File \"" + file + "\" already exist");
+			}
 
-			if (mode == WriteMode.APPEND) return new PrintWriter(new FileWriter(file, false));
+			if (mode == WriteMode.APPEND) {
+				return new PrintWriter(new FileWriter(file, false));
+			}
 			return new PrintWriter(fileObject.openOutputStream(), autoFlush);
 		} catch (UnsupportedOperationException exception) {
 			return new PrintWriter(fileObject.openOutputStream(), autoFlush);
@@ -58,13 +65,17 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 
 	protected static File getFile(FileObject fileObject) {
 		URI uri = fileObject.toUri();
-		if (uri.isAbsolute()) return new File(uri);
+		if (uri.isAbsolute()) {
+			return new File(uri);
+		}
 		return new File(uri.toString());
 	}
 
 	protected AnnotationMirror getAnnotationMirror(Element element, Class<? extends Annotation> annotationClass) {
 		for (AnnotationMirror annotation : processingEnv.getElementUtils().getAllAnnotationMirrors(element)) {
-			if (annotationMirrorMatches(annotation, annotationClass)) return annotation;
+			if (annotationMirrorMatches(annotation, annotationClass)) {
+				return annotation;
+			}
 		}
 		return null;
 	}
@@ -106,7 +117,9 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 
 	protected AnnotationValue getAnnotationValue(AnnotationMirror annotation, String key) {
 		for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : processingEnv.getElementUtils().getElementValuesWithDefaults(annotation).entrySet()) {
-			if (entry.getKey().getSimpleName().contentEquals(key)) return entry.getValue();
+			if (entry.getKey().getSimpleName().contentEquals(key)) {
+				return entry.getValue();
+			}
 		}
 		return null;
 	}
@@ -118,7 +131,9 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 	protected AnnotationValue getAnnotationValue(Element element, Class<? extends Annotation> annotation, String key) {
 		for (AnnotationMirror confAnnotation : getAnnotationMirrors(element, annotation)) {
 			for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> value : confAnnotation.getElementValues().entrySet()) {
-				if (value.getKey().getSimpleName().contentEquals(key)) return value.getValue();
+				if (value.getKey().getSimpleName().contentEquals(key)) {
+					return value.getValue();
+				}
 			}
 		}
 		return null;
@@ -194,8 +209,13 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 	}
 
 	protected static void writeImport(PrintWriter writer, Class<?>... classes) {
+		List<String> names = new ArrayList<>();
 		for (Class clazz : classes) {
-			writer.println("import " + clazz.getName() + ";");
+			names.add(clazz.getName());
+		}
+		Collections.sort(names);
+		for (String name : names) {
+			writer.println("import " + name + ";");
 		}
 	}
 
@@ -203,9 +223,34 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 		return field.substring(0, 1).toUpperCase() + field.substring(1);
 	}
 
-	protected String getFullName(Element field) {
-		String name = processingEnv.getTypeUtils().asElement(field.asType()).toString();
-		return name;
+	protected String getType(Element element) {
+		TypeMirror type = element.asType();
+		switch (type.getKind()) {
+			case ARRAY:
+			case BOOLEAN:
+				return "boolean";
+			case BYTE:
+				return "byte";
+			case CHAR:
+				return "char";
+			case DOUBLE:
+				return "double";
+			case FLOAT:
+				return "float";
+			case INT:
+				return "int";
+			case LONG:
+				return "long";
+			default:
+				return processingEnv.getTypeUtils().asElement(type).toString();
+		}
 	}
 
+	protected TypeMirror mirror(Class<?> type, Class<?>... parameterized) {
+		TypeMirror[] typeArgs = new TypeMirror[parameterized.length];
+		for (int i = 0; i < parameterized.length; i++) {
+			typeArgs[i] = processingEnv.getElementUtils().getTypeElement(parameterized[i].getName()).asType();
+		}
+		return processingEnv.getTypeUtils().getDeclaredType(processingEnv.getElementUtils().getTypeElement(type.getName()), typeArgs);
+	}
 }

@@ -6,6 +6,7 @@ import net.aeten.core.Factory;
  *
  * @author Thomas Pérennou
  */
-public interface SpiFactory<T> extends Factory<T, String> {
-	Class<?> getType();
+public interface SpiFactory<T, P> extends Factory<T, P> {
+	Class[] getTypes();
+	Class<P> getParameterType();
 }
