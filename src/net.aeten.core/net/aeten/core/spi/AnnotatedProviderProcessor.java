@@ -140,12 +140,10 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 
 		debug("Configure " + name);
 		String pkg = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
-		PrintWriter writer = null;
 		try {
 			FileObject fileObject = processingEnv.getFiler().createSourceFile(pkg + "." + name, element);
-			writer = getWriter(fileObject, WriteMode.CREATE, false);
+			try (PrintWriter writer = getWriter(fileObject, WriteMode.CREATE, false)) {
 
-			try {
 				writer.println("package " + pkg + ";");
 				writer.println();
 				writeImport(writer, Generated.class, Provider.class, SpiConfiguration.class);
@@ -193,16 +191,9 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				writer.println("	}");
 				writer.println("}");
 				writer.flush();
-			} finally {
-				writer.close();
 			}
 		} catch (IOException | IllegalArgumentException | Error exception) {
 			error("Unexpected exception", exception, element);
-
-		} finally {
-			if (writer != null) {
-				writer.close();
-			}
 		}
 	}
 

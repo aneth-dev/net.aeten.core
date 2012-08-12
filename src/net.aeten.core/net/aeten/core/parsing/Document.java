@@ -48,7 +48,7 @@ public class Document {
 		
 	}
 
-	public static Document load(Reader reader, Parser<MarkupNode> parser) {
+	public static Document load(Reader reader, Parser<MarkupNode> parser) throws ParsingException {
 		final Document document = new Document();
  		parser.parse(reader, new Handler<ParsingData<MarkupNode>>() {
 			Document.Entry entry = null;

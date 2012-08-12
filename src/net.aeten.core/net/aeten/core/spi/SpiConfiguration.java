@@ -6,6 +6,7 @@ import net.aeten.core.Predicate;
 import net.aeten.core.parsing.Document;
 import net.aeten.core.parsing.MarkupNode;
 import net.aeten.core.parsing.Parser;
+import net.aeten.core.parsing.ParsingException;
 
 /**
  *
@@ -38,7 +39,11 @@ public class SpiConfiguration {
 		} else {
 			parser = (Parser<MarkupNode>) Service.getProvider(Parser.class, parserIdentifier);
 		}
-		this.root = Document.load(new InputStreamReader(instanceClass.getClassLoader().getResourceAsStream(resource)), parser).root;
+		try {
+			this.root = Document.load(new InputStreamReader(instanceClass.getClassLoader().getResourceAsStream(resource)), parser).root;
+		} catch (ParsingException ex) {
+			throw new IllegalArgumentException(ex);
+		}
 
 	}
 
