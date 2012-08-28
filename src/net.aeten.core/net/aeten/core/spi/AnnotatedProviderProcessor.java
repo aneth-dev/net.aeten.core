@@ -1,9 +1,23 @@
 package net.aeten.core.spi;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import javax.annotation.Generated;
-import javax.annotation.processing.*;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
+import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedSourceVersion;
 import static javax.lang.model.SourceVersion.RELEASE_7;
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
@@ -16,7 +30,7 @@ import net.aeten.core.logging.LogLevel;
  * @author Thomas Pérennou
  */
 @Provider(Processor.class)
-@SupportedAnnotationTypes({"net.aeten.core.spi.Provider", "javax.annotation.Generated", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration", "net.aeten.core.spi.SpiInitializer"})
+@SupportedAnnotationTypes({ "net.aeten.core.spi.Provider", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration"})
 @SupportedSourceVersion(RELEASE_7)
 public class AnnotatedProviderProcessor extends AbstractProcessor {
 
@@ -97,7 +111,6 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 							while ((line = reader.readLine()) != null) {
 								copy.write(line + "\n");
 								if (line.trim().equals(providerClassName)) {
-									debug("Provider " + providerClassName + " for service " + service + " is already registered");
 									alreadyRegistered = true;
 								}
 							}
@@ -112,7 +125,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 						writer.write(copy.toString());
 						if (!alreadyRegistered) {
 							writer.println(providerClassName);
-							note("Add provider " + providerClassName + " for service " + service);
+							note(AnnotatedProviderProcessor.class.getSimpleName() + " add provider " + providerClassName + " for service " + service);
 						}
 					}
 				} catch (IOException | IllegalArgumentException exception) {
@@ -127,38 +140,24 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 	private void configure(Element element, AnnotationMirror configuration, List<Element> initializers) {
 		AnnotationValue nameAnnotationValue = getAnnotationValue(configuration, "name");
 		String name = getClassName(nameAnnotationValue);
+		String pkg = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
+		
+		note(AnnotatedProviderProcessor.class.getName() + " creates " + pkg + "." + name);
+		
 		TypeElement providerElement = toElement(getAnnotationValue(configuration, "provider"));
-		List<String> services = new ArrayList<>();
+		List<TypeElement> services = new ArrayList<>();
 		for (AnnotationMirror serviceAnnotation : getAnnotationMirrors(providerElement, Provider.class)) {
 			AnnotationValue annotationValue = getAnnotationValue(serviceAnnotation);
 			for (AnnotationValue value : (Iterable<AnnotationValue>) annotationValue.getValue()) {
-				services.add(getProperQualifiedName(toElement(value)));
+				services.add(toElement(value));
 			}
 		}
-		String provider = providerElement.getQualifiedName().toString();
 		String parser = (String) getAnnotationValue(configuration, "parser").getValue();
 
-		debug("Configure " + name);
-		String pkg = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
+		
 		try {
 			FileObject fileObject = processingEnv.getFiler().createSourceFile(pkg + "." + name, element);
 			try (PrintWriter writer = getWriter(fileObject, WriteMode.CREATE, false)) {
-
-				writer.println("package " + pkg + ";");
-				writer.println();
-				writeImport(writer, Generated.class, Provider.class, SpiConfiguration.class);
-				writer.println();
-				writer.println("@Generated(\"" + AnnotatedProviderProcessor.class.getName() + "\")");
-				writer.print("@" + Provider.class.getSimpleName() + ((services.size() > 1) ? "({" : "("));
-
-				for (int i = 0; i < services.size(); i++) {
-					writer.print(services.get(i) + ".class");
-					if (i < (services.size() - 1)) {
-						writer.write(", ");
-					}
-				}
-				writer.println(((services.size() > 1) ? "})" : ")"));
-				writer.println("public class " + name + " extends " + provider + " {");
 				TypeMirror initializerType = null;
 				Iterator<? extends TypeMirror> thrownTypes = null;
 				for (Element enclosedElement : providerElement.getEnclosedElements()) {
@@ -174,6 +173,51 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				if (initializerType == null) {
 					error("SpiInitializer not found in " + providerElement, element);
 				}
+				String initializerClassName = initializerType.toString();
+				int classNamePosition = initializerClassName.lastIndexOf('.');
+				if (classNamePosition != -1) {
+					initializerClassName = initializerClassName.substring(classNamePosition + 1);
+				}
+
+				writer.println("package " + pkg + ";");
+				writer.println();
+				
+				List<String> toImport = new ArrayList<>();
+				String providerPackage = getPackageOf(providerElement);
+				String providerClassName = getClassOf(providerElement);
+				if (!pkg.equals(providerPackage)) {
+					toImport.add(providerPackage + "." + initializerClassName);
+					// Import only root enclosing class if is inner
+					String providerRootImport = getProperQualifiedName(providerElement);
+					int inner = providerRootImport.indexOf('$');
+					if (inner != -1) {
+						providerRootImport = providerRootImport.substring(0, inner);
+					}
+					toImport.add(providerRootImport);
+				}
+ 				for (TypeElement service : services) {
+					if (!getPackageOf(service).equals(pkg)) {
+						String serviceRootImport = getProperQualifiedName(service);
+						int inner = serviceRootImport.indexOf('$');
+						if (inner != -1) {
+							serviceRootImport = serviceRootImport.substring(0, inner);
+						}
+						toImport.add(serviceRootImport);
+					}
+				}
+ 				writeImport(writer, toImport, Generated.class, Provider.class, SpiConfiguration.class);
+				writer.println();
+				writer.println("@Generated(\"" + AnnotatedProviderProcessor.class.getName() + "\")");
+				writer.print("@" + Provider.class.getSimpleName() + ((services.size() > 1) ? "({" : "("));
+
+				for (Iterator<TypeElement> iterator = services.iterator(); iterator.hasNext();) {
+					writer.print(getClassOf(iterator.next()) + ".class");
+					if (iterator.hasNext()) {
+						writer.write(", ");
+					}
+				}
+				writer.println(((services.size() > 1) ? "})" : ")"));
+				writer.println("public class " + name + " extends " + providerClassName + " {");
 				writer.print("	public " + name + " ()");
 				if (thrownTypes.hasNext()) {
 					writer.print(" throws ");
@@ -185,8 +229,8 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 					}
 				}
 				writer.println(" {");
-				writer.print("		super(new " + initializerType + "(new SpiConfiguration(");
-				writer.print("\"" + pkg + "\", " + "\"" + nameAnnotationValue.getValue() + "\", " + "\"" + parser + "\", " + provider + ".class");
+				writer.print("		super(new " + initializerClassName + "(new SpiConfiguration(");
+				writer.print("\"" + pkg + "\", " + "\"" + nameAnnotationValue.getValue() + "\", " + "\"" + parser + "\", " + providerClassName + ".class");
 				writer.println(")));");
 				writer.println("	}");
 				writer.println("}");
@@ -198,7 +242,11 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 	}
 
 	private static String getClassName(AnnotationValue configurationFileNameAnnotationValue) {
-		String configurationFileName = (String) configurationFileNameAnnotationValue.getValue();
-		return configurationFileName.substring(0, configurationFileName.lastIndexOf('.')).replace('.', '_');
+		String[] words = ((String) configurationFileNameAnnotationValue.getValue()).split("[-_\\.]");
+		String className = "";
+		for (int i = 0; i< words.length - 1; i++) {
+			className += upperFirstChar(words[i].toLowerCase());
+		}
+		return className;
 	}
 }

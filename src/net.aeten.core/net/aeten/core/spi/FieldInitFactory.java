@@ -1,7 +1,5 @@
 package net.aeten.core.spi;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.annotation.Annotation;
@@ -12,9 +10,13 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+
 import net.aeten.core.Factory;
 import net.aeten.core.Identifiable;
 import net.aeten.core.Predicate;
@@ -39,6 +41,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 		return factory.create(parameter);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static Factory<Object, Void> create(final Document.Tag tag, final Class<?> type, final List<Class<?>> parameterizedTypes, final ClassLoader classLoader) {
 		if (tag.value == null) {
 			return new Factory<Object, Void>() {
@@ -60,19 +63,23 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 					try {
 						return Service.getProvider((Class<? extends Identifiable>)type, (String) tag.value);
 					} catch (ClassCastException | NoSuchElementException exception) {
-						return Service.getProvider(SpiFactory.class, new Predicate<SpiFactory>() {
-							@Override
-							public boolean evaluate(SpiFactory element) {
-								if (element.getParameterType().equals(String.class) && element.getTypes().length > 0) {
-									for (Class<?> t : element.getTypes()) {
-										if (t.equals(type)) {
-											return true;
+						try {
+							return Service.getProvider(SpiFactory.class, new Predicate<SpiFactory>() {
+								@Override
+								public boolean evaluate(SpiFactory element) {
+									if (element.getParameterType().equals(String.class) && element.getTypes().length > 0) {
+										for (Class<?> t : element.getTypes()) {
+											if (t.equals(type)) {
+												return true;
+											}
 										}
 									}
+									return false;
 								}
-								return false;
-							}
-						}).create(tag.value);
+							}).create(tag.value);
+						} catch (NoSuchElementException nse) {
+							throw new NoSuchElementException("Unable to find " + SpiFactory.class.getName() + " for " + type.getName());
+						}
 					}
 				}
 			};
@@ -132,8 +139,6 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 								}
 							}
 						} else {
-//							return getFactory(classLoader.loadClass(tag.type).getConstructor(SpiConfiguration.class), new SpiConfiguration(entry));
-
 							for (Constructor<?> constructor : classLoader.loadClass(tag.type).getConstructors()) {
 								Annotation[][] annotations = constructor.getParameterAnnotations();
 								if (annotations.length == 1 && annotations[0].length == 1 && annotations[0][0] instanceof SpiInitializer) {

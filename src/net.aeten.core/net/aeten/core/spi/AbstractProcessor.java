@@ -23,7 +23,6 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.Diagnostic.Kind;
 import javax.tools.FileObject;
@@ -175,7 +174,6 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 		if (this.logLevel.compareTo(LogLevel.WARN) <= 0) {
 			processingEnv.getMessager().printMessage(Kind.WARNING, message, element);
 		}
-
 	}
 
 	protected void error(String message, Element element, AnnotationMirror annotation, AnnotationValue value) {
@@ -209,8 +207,11 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 	}
 
 	protected static void writeImport(PrintWriter writer, Class<?>... classes) {
-		List<String> names = new ArrayList<>();
-		for (Class clazz : classes) {
+		writeImport(writer, new ArrayList<String>(classes.length), classes);
+	}
+	
+	protected static void writeImport(PrintWriter writer, List<String> names, Class<?>... classes) {
+		for (Class<?> clazz : classes) {
 			names.add(clazz.getName());
 		}
 		Collections.sort(names);
@@ -218,7 +219,7 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 			writer.println("import " + name + ";");
 		}
 	}
-
+	
 	protected static String upperFirstChar(String field) {
 		return field.substring(0, 1).toUpperCase() + field.substring(1);
 	}
@@ -252,5 +253,14 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 			typeArgs[i] = processingEnv.getElementUtils().getTypeElement(parameterized[i].getName()).asType();
 		}
 		return processingEnv.getTypeUtils().getDeclaredType(processingEnv.getElementUtils().getTypeElement(type.getName()), typeArgs);
+	}
+	
+	protected String getPackageOf(TypeElement element) {
+		return processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
+	}
+	
+	protected String getClassOf(TypeElement element) {
+		String elementPackage = getPackageOf(element);
+		return element.getQualifiedName().toString().substring(elementPackage.isEmpty()? 0 : elementPackage.length() + 1);
 	}
 }

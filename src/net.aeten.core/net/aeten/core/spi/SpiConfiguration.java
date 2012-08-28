@@ -19,6 +19,8 @@ public class SpiConfiguration {
 		this.root = configuration;
 	}
 
+	
+	@SuppressWarnings("unchecked")
 	public SpiConfiguration(String packageName, String resourceName, String parserIdentifier, Class<?> instanceClass) {
 		String resource = packageName.replace('.', '/') + "/" + resourceName;
 		Parser<MarkupNode> parser;
@@ -28,6 +30,7 @@ public class SpiConfiguration {
 				throw new IllegalArgumentException("Unable to find parser without extension in resource file " + resourceName);
 			}
 			final String extension = resourceName.substring(extensionIndex+1);
+			@SuppressWarnings("rawtypes")
 			Predicate<Parser> parserPredicate = new Predicate<Parser>() {
 				@Override
 				public boolean evaluate(Parser element) {
@@ -44,7 +47,6 @@ public class SpiConfiguration {
 		} catch (ParsingException ex) {
 			throw new IllegalArgumentException(ex);
 		}
-
 	}
 
 }

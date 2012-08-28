@@ -2,9 +2,19 @@ package net.aeten.core.spi;
 
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import javax.annotation.Generated;
-import javax.annotation.processing.*;
+import javax.annotation.processing.ProcessingEnvironment;
+import javax.annotation.processing.Processor;
+import javax.annotation.processing.RoundEnvironment;
+import javax.annotation.processing.SupportedAnnotationTypes;
+import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
@@ -13,6 +23,7 @@ import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+
 import net.aeten.core.Factory;
 import net.aeten.core.logging.LogLevel;
 import net.aeten.core.parsing.Document;
@@ -29,13 +40,11 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 	}
 
 	@Override
-	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-		debug("Process FieldInitializationProcessor");
+	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {		
 		for (Element initializer : roundEnv.getElementsAnnotatedWith(SpiInitializer.class)) {
-			processingEnv.getElementUtils().getPackageOf(initializer).getQualifiedName().toString();
-			String pkg = processingEnv.getElementUtils().getPackageOf(initializer).getQualifiedName().toString();
+			String pkg = processingEnv.getElementUtils().getPackageOf(getEnclosingClass(initializer)).getQualifiedName().toString();
 			String clazz = initializer.asType().toString();
-			debug("Process " + initializer.toString());
+			debug(FieldInitializationProcessor.class.getSimpleName() + " process " + clazz);
 			try (PrintWriter writer = getWriter(processingEnv.getFiler().createSourceFile(pkg + "." + clazz, initializer), AbstractProcessor.WriteMode.CREATE, false)) {
 				writer.println("package " + pkg + ";");
 				writer.println();
@@ -163,9 +172,11 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 
 	static List<Element> getElementsAnnotatedWith(Element classElement, Class<? extends Annotation> annotation) {
 		List<Element> elements = new ArrayList<>();
-		for (Element element : classElement.getEnclosedElements()) {
-			if (element.getAnnotation(annotation) != null) {
-				elements.add(element);
+		for (;classElement.getKind() != ElementKind.PACKAGE;classElement = classElement.getEnclosingElement()) {
+			for (Element element : classElement.getEnclosedElements()) {
+				if (element.getAnnotation(annotation) != null) {
+					elements.add(element);
+				}
 			}
 		}
 		return elements;

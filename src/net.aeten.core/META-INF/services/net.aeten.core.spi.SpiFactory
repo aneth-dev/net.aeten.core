@@ -1,0 +1,12 @@
+net.aeten.core.spi.FieldInitFactory$BooleanFactory
+net.aeten.core.spi.FieldInitFactory$BigDecimalFactory
+net.aeten.core.spi.FieldInitFactory$InetAddressFactory
+net.aeten.core.spi.FieldInitFactory$FloatFactory
+net.aeten.core.spi.FieldInitFactory$LongFactory
+net.aeten.core.spi.FieldInitFactory$DoubleFactory
+net.aeten.core.spi.FieldInitFactory$IntegerFactory
+net.aeten.core.spi.FieldInitFactory$OutputStreamFactory
+net.aeten.core.spi.FieldInitFactory$BigIntegerFactory
+net.aeten.core.spi.FieldInitFactory$InputStreamFactory
+net.aeten.core.spi.FieldInitFactory$InetSocketFactory
+net.aeten.core.spi.FieldInitFactory$StringFactory
