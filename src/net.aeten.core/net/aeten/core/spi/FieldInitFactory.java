@@ -176,7 +176,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class StringFactory implements SpiFactory<String, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{String.class};
 		}
 
@@ -195,7 +195,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class BooleanFactory implements SpiFactory<Boolean, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{Boolean.class, boolean.class};
 		}
 
@@ -214,7 +214,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class IntegerFactory implements SpiFactory<Integer, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{Integer.class, int.class};
 		}
 
@@ -233,7 +233,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class LongFactory implements SpiFactory<Long, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{Long.class, long.class};
 		}
 
@@ -252,7 +252,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class FloatFactory implements SpiFactory<Float, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{Float.class, float.class};
 		}
 
@@ -271,7 +271,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class DoubleFactory implements SpiFactory<Double, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{Double.class, double.class};
 		}
 
@@ -290,7 +290,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class BigIntegerFactory implements SpiFactory<BigInteger, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{BigInteger.class};
 		}
 
@@ -309,7 +309,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class BigDecimalFactory implements SpiFactory<BigDecimal, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{BigDecimal.class};
 		}
 
@@ -328,7 +328,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class InetAddressFactory implements SpiFactory<InetAddress, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{InetAddress.class};
 		}
 
@@ -351,7 +351,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class InetSocketFactory implements SpiFactory<InetSocketAddress, String> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{InetSocketAddress.class};
 		}
 
@@ -375,7 +375,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class InputStreamFactory extends StreamFactory<InputStream> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{InputStream.class};
 		}
 	}
@@ -384,7 +384,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 	public static class OutputStreamFactory extends StreamFactory<OutputStream> {
 
 		@Override
-		public Class[] getTypes() {
+		public Class<?>[] getTypes() {
 			return new Class[]{OutputStream.class};
 		}
 	}
@@ -400,6 +400,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 		public T create(Document.Tag configuration) {
 //			return (T) FieldInitFactory.create(configuration, configuration.type, Collections.<Class<?>>emptyList(), Thread.currentThread().getContextClassLoader()).;
 			try {
+				@SuppressWarnings("unchecked")
 				Class<? extends T> type = (Class<? extends T>) Class.forName(configuration.type);
 				Document.Tag underlying = ((Document.Entry) configuration.value).tags.get(0);
 				if (!underlying.name.equals("underlying")) {
