@@ -1,91 +1,252 @@
 package net.aeten.core.parsing;
 
 import java.io.Reader;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+
 import net.aeten.core.event.Handler;
+import net.aeten.core.parsing.Document.Element.ElementType;
 
 /**
- *
- * @author thomas
+ * @author Thomas Pérennou
  */
-public class Document {
-	public final Map<String, Tag> anchors = new HashMap<>();
-	public final Entry root = new Entry(this);
-
-	public static class Tag {
-		public String name;
-		public String type;
-		public Object value;
-
-		public Tag(String name) {
-			this.name = name;
-		}
-
-		@Override
-		public String toString() {
-			return name + ((type == null) ? ": " : (" (" + type + "): ")) + value;
-		}
+public class Document<T> {
+	public final Map<String, T> anchors = new HashMap<>();
+	public T root;
+	<Y extends T>Document(Y root) {
+		this.root = root;
 	}
+	
+	public static class Node implements
+	      Cloneable {
+		private List<Node> children;
+		public Node parent;
+		public String type;
+		public String value;
 
-	public static class Entry {
-		public final Entry parent;
-		public final Document document;
-		public final List<Tag> tags = new ArrayList<>();
-
-		public Entry(Document document) {
-			this.parent = null;
-			this.document = document;
+		public Node() {
+			this(null);
 		}
-		public Entry(Entry parent) {
+
+		public Node(Node parent) {
 			this.parent = parent;
-			this.document = parent.document;
 		}
 
 		@Override
 		public String toString() {
-			return tags.toString();
+			String string = (value == null || value.isEmpty()) ? "" : (value + ": ");
+			string += (type == null) ? "" : (type);
+			return string + (getChildren().isEmpty() ? "" : (string.isEmpty() ? children : " " + children));
+		}
+
+		public void addChild(Node child) {
+			if (children == null) {
+				children = new ArrayList<>();
+			}
+			children.add(child);
+		}
+
+		public Node getChild() {
+			if (children == null) { throw new IllegalStateException(this + " has no children"); }
+			if (children.size() > 1) { throw new IllegalStateException(this + " has more than one child"); }
+			return children.get(0);
+		}
+
+		public List<Node> getChildren() {
+			if (children == null) { return Collections.<Node> emptyList(); }
+			return children;
+		}
+
+		@Override
+		public Node clone() {
+			return clone(new Node(parent), this);
 		}
 		
+		static Node clone(Node clone, Node ref) {
+			clone.type = ref.type;
+			clone.value = ref.value;
+			if (ref.children != null) {
+				for (Node child : ref.children) {
+					clone.addChild(child.clone());
+				}
+			}
+			return clone;
+		}
+	}
+	public static class Tag implements Map.Entry<Element, Element> {
+		Element key;
+		Element value;
+		
+		Tag() {}
+		
+		@Override
+		public Element getKey() {
+			return key;
+		}
+		
+		void setKey(Element key) {
+			this.key = key;
+		}
+
+		@Override
+		public Element getValue() {
+			return value;
+		}
+
+		@Override
+		public Element setValue(Element value) {
+			Element old = value;
+			this.value = value;
+			return old;
+		}
+		
+		@Override
+		public String toString() {
+			// TODO Auto-generated method stub
+			return key + ": " + value;
+		}
 	}
 
-	public static Document load(Reader reader, Parser<MarkupNode> parser) throws ParsingException {
-		final Document document = new Document();
- 		parser.parse(reader, new Handler<ParsingData<MarkupNode>>() {
-			Document.Entry entry = null;
-			final Queue<Document.Entry> currentEntry = Collections.asLifoQueue(new ArrayDeque<Document.Entry>());
-			Document.Tag currentTag = null;
+	public static class Element {
+		public static enum ElementType {
+			STRING, // String
+			COLLECTION, // Deque<Element>
+			TAG // Map.Entry<Element, Element>
+		}
+		
+		final public Element parent;
+		final public ElementType elementType;
+		public String valueType;
+		public Object value;
+		
+		Element(Element parent, ElementType type) {
+			this(parent, type, null, null);
+		}
+		Element(Element parent, ElementType type, Object value) {
+			this(parent, type, value, null);
+		}
+		Element(Element parent, ElementType type, Object value, String valueType) {
+			if (type == null) {
+				throw new Error("Unable to create Element without type");
+			}
+			this.parent=parent;
+			this.elementType=type;
+			this.value=value;
+			this.valueType=valueType;
+			switch (type) {
+			case COLLECTION:
+				if (value != null) {
+					throw new IllegalArgumentException("Value must be null for " + type + ". " + value + " is given.");
+				}
+				this.value = new ArrayDeque<>();
+				break;
+			case TAG:
+				this.value = new Tag();
+				break;
+			case STRING:
+			default:
+				this.value=value;
+				break;
+			}
+		}
+		
+		public String asString() {
+			assert (elementType == ElementType.STRING);
+			return (String) value;
+		}
+		@SuppressWarnings("unchecked")
+		public Deque<Element> asCollection() {
+			assert (elementType == ElementType.COLLECTION);
+			return (Deque<Element>) value;
+		}
+		public Tag asTag() {
+			assert (elementType == ElementType.TAG);
+			return (Tag) value;
+		}
+		
+		public String toString() {
+			switch (elementType) {
+			case COLLECTION:
+				return  "!" + valueType + " " + value;
+			case STRING:
+				return  "!" + valueType + " \"" + value + '"';
+			case TAG:
+				return "{" + value.toString() + "}";
+			default:
+				return "";
+			}
+		}
+	}
 
+	public static Document<Element> loadElements(Reader reader, Parser<MarkupNode> parser) throws ParsingException {
+		final Document<Element> document = new Document<>(null);
+		parser.parse(reader, new Handler<ParsingData<MarkupNode>>() {
+			private Element entry = null;
+			private String type = null;
+			private final Queue<Document.Element> stack = Collections.asLifoQueue(new ArrayDeque<Document.Element>());
+
+			void append(Element element) throws Error {
+				Element parent = stack.peek();
+				if (parent == null) {
+					document.root = element;
+				} else {
+				switch (parent.elementType) {
+				case COLLECTION:
+					parent.asCollection().add(element);
+					break;
+				case TAG: {
+					Tag tag = parent.asTag();
+					if (tag.getKey() == null) {
+						tag.setKey(element);
+					} else {
+						if (tag.getValue() != null) {
+							throw new Error(String.format("Unable to insert element %s in tag. Key (%s) and value (%s) already defined", element.value, tag.getKey(), tag.getValue()));
+						}
+						tag.setValue(element);
+					} 
+					break;
+				}
+				case STRING:
+					throw new Error(String.format("Unable to insert element %s inside a text node", element.value));
+				default:
+					break;
+				}
+				}
+				stack.add(element);
+				type = null;						
+			}
+			
 			@Override
 			public void handleEvent(ParsingData<MarkupNode> data) {
 				switch (data.getEvent()) {
 				case START_NODE:
 					switch (data.getNodeType()) {
+					case DOCUMENT:
+						break;
 					case TEXT:
-						currentTag.value = data.getValue();
-						break;
-					case MAP:
-					case LIST:
-						entry = entry == null ? document.root : new Document.Entry(entry);
-						if (entry != document.root) {
-							currentTag.value = entry;
-						}
-						currentEntry.add(entry);
-						break;
-					case TYPE:
-						currentTag.type = data.getValue();
+						append(new Element(stack.peek(), ElementType.STRING, data.getValue(), type));
 						break;
 					case TAG:
-						currentTag = new Document.Tag(data.getValue());
-						entry.tags.add(currentTag);
+						append(new Element(stack.peek(), ElementType.TAG, null, type));
+						break;
+					case LIST:
+					case MAP:
+						append(new Element(stack.peek(), ElementType.COLLECTION, null, type));
+						break;
+					case TYPE:
+						type = data.getValue();
 						break;
 					case ANCHOR:
-						entry.document.anchors.put(data.getValue(), currentTag);
+						document.anchors.put(data.getValue(), entry);
 						break;
 					case REFERENCE:
-						Document.Tag ref = entry.document.anchors.get(data.getValue());
-						Document.Tag tag = currentTag;
-						tag.value = ref.value;
-						tag.type = ref.type;
+//						TODO Element.clone(entry, document.anchors.get(data.getValue()));
 						break;
 					default:
 						break;
@@ -93,10 +254,101 @@ public class Document {
 					break;
 				case END_NODE:
 					switch (data.getNodeType()) {
-					case MAP:
 					case LIST:
-						currentEntry.poll();
-						entry = currentEntry.peek();
+					case MAP:
+//					case DOCUMENT:
+					case TAG:
+					case TEXT:
+						type = stack.poll().valueType;
+						break;
+					default:
+						break;
+					}
+					break;
+				}
+			}
+		});
+		return document;
+	}
+	
+
+	public static Document<Node> loadNodes(Reader reader, Parser<MarkupNode> parser) throws ParsingException {
+		final Document<Node> document = new Document<>(new Node());
+
+		parser.parse(reader, new Handler<ParsingData<MarkupNode>>() {
+			private Node node = null;
+			private String type = null;
+			private final Queue<Document.Node> stack = Collections.asLifoQueue(new ArrayDeque<Document.Node>());
+
+			@Override
+			public void handleEvent(ParsingData<MarkupNode> data) {
+				switch (data.getEvent()) {
+				case START_NODE:
+					switch (data.getNodeType()) {
+					case DOCUMENT:
+						document.root.type = type;
+						stack.add(document.root);
+						type = null;
+						node = document.root;
+						break;
+					case TEXT:
+					case TAG:
+						node = new Node(stack.peek());
+						node.value = data.getValue();
+						if (node.parent != null) node.parent.addChild(node);
+						node.type = type;
+						stack.add(node);
+						type = null;
+						break;
+					case LIST:
+					case MAP:
+						node.type = type;
+						node = new Node(stack.peek());
+						if (node.parent != null) node.parent.addChild(node);
+						node.value = "";
+						stack.add(node);
+						type = null;
+						break;
+//					case MAP:
+//						node.type = type;
+////						// do not append to parent
+////						stack.add(stack.peek());
+//						type = null;
+//						break;
+					case TYPE:
+						type = data.getValue();
+						break;
+					case ANCHOR:
+						document.anchors.put(data.getValue(), node);
+						break;
+					case REFERENCE:
+						Node.clone(node, document.anchors.get(data.getValue()));
+						break;
+					default:
+						break;
+					}
+					break;
+				case END_NODE:
+					switch (data.getNodeType()) {
+					case LIST:
+//						stack.poll();
+//						type = null;
+						type = stack.poll().type;
+						break;
+					case MAP:
+//						Node polled = stack.poll();
+////						stack.peek().children = polled.children;
+////						for (Node child: polled.children) {
+////							child.parent = stack.peek();
+////						}
+//						type = null;
+						type = stack.poll().type;
+						break;
+					case DOCUMENT:
+					case TAG:
+					case TEXT:
+						stack.poll();
+						type = null;
 						break;
 					default:
 						break;

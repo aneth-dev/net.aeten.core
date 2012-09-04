@@ -3,9 +3,11 @@ package net.aeten.core.parsing;
 import net.aeten.core.event.Handler;
 
 public abstract class AbstractParser<NodeType extends Enum<?>> implements Parser<NodeType> {
-	protected static class Tag {
+	protected class Tag {
 		public final Tag parent;
 		public final String name;
+		public NodeType childrenNodeType;
+		public String childrenType;
 
 		public Tag(Tag parent, String name) {
 			this.parent = parent;

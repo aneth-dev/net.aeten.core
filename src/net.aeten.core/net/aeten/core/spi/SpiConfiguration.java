@@ -13,9 +13,9 @@ import net.aeten.core.parsing.ParsingException;
  * @author Thomas Pérennou
  */
 public class SpiConfiguration {
-	public final Document.Entry root;
+	public final Document.Element root;
 
-	public SpiConfiguration(Document.Entry configuration) {
+	public SpiConfiguration(Document.Element configuration) {
 		this.root = configuration;
 	}
 
@@ -43,7 +43,7 @@ public class SpiConfiguration {
 			parser = (Parser<MarkupNode>) Service.getProvider(Parser.class, parserIdentifier);
 		}
 		try {
-			this.root = Document.load(new InputStreamReader(instanceClass.getClassLoader().getResourceAsStream(resource)), parser).root;
+			this.root = Document.loadElements(new InputStreamReader(instanceClass.getClassLoader().getResourceAsStream(resource)), parser).root;
 		} catch (ParsingException ex) {
 			throw new IllegalArgumentException(ex);
 		}

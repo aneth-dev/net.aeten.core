@@ -16,11 +16,12 @@ public class UdpIpSocketFactoryInitializer {
 
 	public UdpIpSocketFactoryInitializer(SpiConfiguration configuration) {
 		fieldsFactories = new HashMap<>();
-		for (Document.Tag tag : configuration.root.tags) {
+		for (Document.Element element : configuration.root.asCollection()) {
 			final String field;
 			final Class<?> type;
 			final List<Class<?>> parameterizedTypes = new ArrayList<>();
-			switch (tag.name) {
+			final Document.Tag tag = element.asTag();
+			switch (tag.getKey().asString()) {
 			case "destinationInetSocketAddress":
 			case "destination inet socket address":
 			case "destination-inet-socket-address":
@@ -77,9 +78,9 @@ public class UdpIpSocketFactoryInitializer {
 				type = java.lang.Integer.class;
 				break;
 			default:
-				throw new IllegalArgumentException(String.format("No field named as %s", tag));
+				throw new IllegalArgumentException(String.format("No field named as %s", tag.getKey()));
 			}
-			fieldsFactories.put(field, FieldInitFactory.create(tag, type, parameterizedTypes, UdpIpSocketFactoryInitializer.class.getClassLoader()));
+			fieldsFactories.put(field, FieldInitFactory.create(tag.getValue(), type, parameterizedTypes, UdpIpSocketFactoryInitializer.class.getClassLoader()));
 		}
 	}
 	public java.net.InetSocketAddress getDestinationInetSocketAddress() {
