@@ -56,12 +56,12 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 				writer.println();
 				writer.println("	public " + clazz + "(" + SpiConfiguration.class.getSimpleName() + " configuration) {");
 				writer.println("		fieldsFactories = new HashMap<>();");
-				writer.println("		for (Document.Element element : configuration.root.asCollection()) {");
+				writer.println("		for (Document.Element element : configuration.root.asSequence()) {");
 				writer.println("			final String field;");
 				writer.println("			final Class<?> type;");
 				writer.println("			final List<Class<?>> parameterizedTypes = new ArrayList<>();");
-				writer.println("			final Document.Tag tag = element.asTag();");
-				writer.println("			switch (tag.getKey().asString()) {");
+				writer.println("			final Document.MappingEntry entry = element.asMappingEntry();");
+				writer.println("			switch (entry.getKey().asString()) {");
 				Element objectElement = processingEnv.getElementUtils().getTypeElement("java.lang.Object");
 				for (Element element = getEnclosingClass(initializer); !element.equals(objectElement); element = superTypeElement(element)) {
 					for (Element fieldInit : getElementsAnnotatedWith(element, FieldInit.class)) {
@@ -98,10 +98,10 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 					}
 				}
 				writer.println("			default:");
-				writer.println("				throw new IllegalArgumentException(String.format(\"No field named %s\", tag.getKey()));");
+				writer.println("				throw new IllegalArgumentException(String.format(\"No field named %s\", entry.getKey()));");
 				writer.println("			}");
 
-				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(tag.getValue(), type, parameterizedTypes, " + clazz + ".class.getClassLoader()));");
+				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(entry.getValue(), type, parameterizedTypes, " + clazz + ".class.getClassLoader()));");
 				writer.println("		}");
 				writer.println("	}");
 

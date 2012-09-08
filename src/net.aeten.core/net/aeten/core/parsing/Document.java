@@ -6,12 +6,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
 import net.aeten.core.event.Handler;
-import net.aeten.core.parsing.Document.Element.ElementType;
 
 /**
  * @author Thomas Pérennou
@@ -19,12 +19,13 @@ import net.aeten.core.parsing.Document.Element.ElementType;
 public class Document<T> {
 	public final Map<String, T> anchors = new HashMap<>();
 	public T root;
-	<Y extends T>Document(Y root) {
+
+	<Y extends T> Document(Y root) {
 		this.root = root;
 	}
-	
+
 	public static class Node implements
-	      Cloneable {
+			Cloneable {
 		private List<Node> children;
 		public Node parent;
 		public String type;
@@ -53,13 +54,19 @@ public class Document<T> {
 		}
 
 		public Node getChild() {
-			if (children == null) { throw new IllegalStateException(this + " has no children"); }
-			if (children.size() > 1) { throw new IllegalStateException(this + " has more than one child"); }
+			if (children == null) {
+				throw new IllegalStateException(this + " has no children");
+			}
+			if (children.size() > 1) {
+				throw new IllegalStateException(this + " has more than one child");
+			}
 			return children.get(0);
 		}
 
 		public List<Node> getChildren() {
-			if (children == null) { return Collections.<Node> emptyList(); }
+			if (children == null) {
+				return Collections.<Node> emptyList();
+			}
 			return children;
 		}
 
@@ -67,8 +74,9 @@ public class Document<T> {
 		public Node clone() {
 			return clone(new Node(parent), this);
 		}
-		
-		static Node clone(Node clone, Node ref) {
+
+		static Node clone(Node clone,
+				Node ref) {
 			clone.type = ref.type;
 			clone.value = ref.value;
 			if (ref.children != null) {
@@ -79,17 +87,20 @@ public class Document<T> {
 			return clone;
 		}
 	}
-	public static class Tag implements Map.Entry<Element, Element> {
+
+	public static class MappingEntry implements
+			Map.Entry<Element, Element> {
 		Element key;
 		Element value;
-		
-		Tag() {}
-		
+
+		MappingEntry() {
+		}
+
 		@Override
 		public Element getKey() {
 			return key;
 		}
-		
+
 		void setKey(Element key) {
 			this.key = key;
 		}
@@ -105,78 +116,94 @@ public class Document<T> {
 			this.value = value;
 			return old;
 		}
-		
+
 		@Override
 		public String toString() {
 			// TODO Auto-generated method stub
 			return key + ": " + value;
 		}
 	}
+	
+	public enum ElementType {
+		STRING,
+		SEQUENCE,
+		MAPPING_ENTRY
+	}
 
 	public static class Element {
-		public static enum ElementType {
-			STRING, // String
-			COLLECTION, // Deque<Element>
-			TAG // Map.Entry<Element, Element>
-		}
-		
+
 		final public Element parent;
+		/**
+		 * STRING -> String<br/>
+		 * SEQUENCE -> Deque&lt;Element&gt;<br/>
+		 * MAPPING_ENTRY -> Map.Entry&lt;Element, Element&gt;
+		 **/
 		final public ElementType elementType;
 		public String valueType;
 		public Object value;
-		
-		Element(Element parent, ElementType type) {
+
+		Element(Element parent,
+				ElementType type) {
 			this(parent, type, null, null);
 		}
-		Element(Element parent, ElementType type, Object value) {
+
+		Element(Element parent,
+				ElementType type,
+				Object value) {
 			this(parent, type, value, null);
 		}
-		Element(Element parent, ElementType type, Object value, String valueType) {
+
+		Element(Element parent,
+				ElementType type,
+				Object value,
+				String valueType) {
 			if (type == null) {
 				throw new Error("Unable to create Element without type");
 			}
-			this.parent=parent;
-			this.elementType=type;
-			this.value=value;
-			this.valueType=valueType;
+			this.parent = parent;
+			this.elementType = type;
+			this.value = value;
+			this.valueType = valueType;
 			switch (type) {
-			case COLLECTION:
+			case SEQUENCE:
 				if (value != null) {
 					throw new IllegalArgumentException("Value must be null for " + type + ". " + value + " is given.");
 				}
-				this.value = new ArrayDeque<>();
+				this.value = new LinkedList<>();
 				break;
-			case TAG:
-				this.value = new Tag();
+			case MAPPING_ENTRY:
+				this.value = new MappingEntry();
 				break;
 			case STRING:
 			default:
-				this.value=value;
+				this.value = value;
 				break;
 			}
 		}
-		
+
 		public String asString() {
 			assert (elementType == ElementType.STRING);
 			return (String) value;
 		}
+
 		@SuppressWarnings("unchecked")
-		public Deque<Element> asCollection() {
-			assert (elementType == ElementType.COLLECTION);
+		public Deque<Element> asSequence() {
+			assert (elementType == ElementType.SEQUENCE);
 			return (Deque<Element>) value;
 		}
-		public Tag asTag() {
-			assert (elementType == ElementType.TAG);
-			return (Tag) value;
+
+		public MappingEntry asMappingEntry() {
+			assert (elementType == ElementType.MAPPING_ENTRY);
+			return (MappingEntry) value;
 		}
-		
+
 		public String toString() {
 			switch (elementType) {
-			case COLLECTION:
-				return  "!" + valueType + " " + value;
+			case SEQUENCE:
+				return "!" + valueType + " " + value;
 			case STRING:
-				return  "!" + valueType + " \"" + value + '"';
-			case TAG:
+				return "!" + valueType + " \"" + value + '"';
+			case MAPPING_ENTRY:
 				return "{" + value.toString() + "}";
 			default:
 				return "";
@@ -184,7 +211,8 @@ public class Document<T> {
 		}
 	}
 
-	public static Document<Element> loadElements(Reader reader, Parser<MarkupNode> parser) throws ParsingException {
+	public static Document<Element> loadElements(Reader reader,
+			Parser<MarkupNode> parser) throws ParsingException {
 		final Document<Element> document = new Document<>(null);
 		parser.parse(reader, new Handler<ParsingData<MarkupNode>>() {
 			private Element entry = null;
@@ -196,32 +224,32 @@ public class Document<T> {
 				if (parent == null) {
 					document.root = element;
 				} else {
-				switch (parent.elementType) {
-				case COLLECTION:
-					parent.asCollection().add(element);
-					break;
-				case TAG: {
-					Tag tag = parent.asTag();
-					if (tag.getKey() == null) {
-						tag.setKey(element);
-					} else {
-						if (tag.getValue() != null) {
-							throw new Error(String.format("Unable to insert element %s in tag. Key (%s) and value (%s) already defined", element.value, tag.getKey(), tag.getValue()));
+					switch (parent.elementType) {
+					case SEQUENCE:
+						parent.asSequence().add(element);
+						break;
+					case MAPPING_ENTRY: {
+						MappingEntry tag = parent.asMappingEntry();
+						if (tag.getKey() == null) {
+							tag.setKey(element);
+						} else {
+							if (tag.getValue() != null) {
+								throw new Error(String.format("Unable to insert element %s in tag. Key (%s) and value (%s) already defined", element.value, tag.getKey(), tag.getValue()));
+							}
+							tag.setValue(element);
 						}
-						tag.setValue(element);
-					} 
-					break;
-				}
-				case STRING:
-					throw new Error(String.format("Unable to insert element %s inside a text node", element.value));
-				default:
-					break;
-				}
+						break;
+					}
+					case STRING:
+						throw new Error(String.format("Unable to insert element %s inside a text node", element.value));
+					default:
+						break;
+					}
 				}
 				stack.add(element);
-				type = null;						
+				type = null;
 			}
-			
+
 			@Override
 			public void handleEvent(ParsingData<MarkupNode> data) {
 				switch (data.getEvent()) {
@@ -233,11 +261,11 @@ public class Document<T> {
 						append(new Element(stack.peek(), ElementType.STRING, data.getValue(), type));
 						break;
 					case TAG:
-						append(new Element(stack.peek(), ElementType.TAG, null, type));
+						append(new Element(stack.peek(), ElementType.MAPPING_ENTRY, null, type));
 						break;
 					case LIST:
 					case MAP:
-						append(new Element(stack.peek(), ElementType.COLLECTION, null, type));
+						append(new Element(stack.peek(), ElementType.SEQUENCE, null, type));
 						break;
 					case TYPE:
 						type = data.getValue();
@@ -270,9 +298,9 @@ public class Document<T> {
 		});
 		return document;
 	}
-	
 
-	public static Document<Node> loadNodes(Reader reader, Parser<MarkupNode> parser) throws ParsingException {
+	public static Document<Node> loadNodes(Reader reader,
+			Parser<MarkupNode> parser) throws ParsingException {
 		final Document<Node> document = new Document<>(new Node());
 
 		parser.parse(reader, new Handler<ParsingData<MarkupNode>>() {

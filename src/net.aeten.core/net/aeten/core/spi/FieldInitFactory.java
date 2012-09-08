@@ -21,7 +21,7 @@ import net.aeten.core.Factory;
 import net.aeten.core.Identifiable;
 import net.aeten.core.Predicate;
 import net.aeten.core.parsing.Document;
-import net.aeten.core.parsing.Document.Element.ElementType;
+import net.aeten.core.parsing.Document.ElementType;
 
 /**
  * 
@@ -159,7 +159,7 @@ public class FieldInitFactory<T, P> implements
 			@Override
 			public Object create(Void context) {
 				List<Object> list = new ArrayList<>();
-				for (Document.Element child : configuration.asCollection()) {
+				for (Document.Element child : configuration.asSequence()) {
 					Class<?> elementType = parameterizedTypes.get(0);
 					list.add(FieldInitFactory.create(child, elementType, Collections.<Class<?>> emptyList(), elementType.getClassLoader()).create(null));
 				}
@@ -173,8 +173,8 @@ public class FieldInitFactory<T, P> implements
 			@Override
 			public Object create(Void context) {
 				Map<String, Object> map = new LinkedHashMap<>();
-				for (Document.Element child : configuration.asCollection()) {
-					Document.Tag tag = child.asTag();
+				for (Document.Element child : configuration.asSequence()) {
+					Document.MappingEntry tag = child.asMappingEntry();
 					Class<?> elementType = parameterizedTypes.get(1);
 					map.put(tag.getKey().asString(), FieldInitFactory.create(tag.getValue(), elementType, Collections.<Class<?>> emptyList(), elementType.getClassLoader()).create(null));
 				}
@@ -453,8 +453,8 @@ public class FieldInitFactory<T, P> implements
 		public T create(Document.Element configuration) {
 			try {
 				Class<? extends T> type = (Class<? extends T>) Class.forName(configuration.valueType);
-				if (configuration.asCollection().size() == 1 && configuration.asCollection().getFirst().asTag().getKey().asString().equals("underlying")) {
-					Document.Tag underlying = configuration.asCollection().getFirst().asTag();
+				if (configuration.asSequence().size() == 1 && configuration.asSequence().getFirst().asMappingEntry().getKey().asString().equals("underlying")) {
+					Document.MappingEntry underlying = configuration.asSequence().getFirst().asMappingEntry();
 					return type.getConstructor(getTypes()[0]).newInstance(FieldInitFactory.create(underlying.getValue(), getTypes()[0], Collections.<Class<?>> emptyList(), Thread.currentThread().getContextClassLoader()).create(null));
 				}
 				if (configuration.valueType != null) {
