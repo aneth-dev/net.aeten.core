@@ -6,15 +6,18 @@ import net.aeten.core.event.EventData;
  *
  * @author Thomas Pérennou
  */
-public class ParsingData<NodeType extends Enum<?>> extends EventData<net.aeten.core.parsing.Parser<NodeType>, ParsingEvent> {
+public class ParsingData<NodeType extends Enum<?>> extends
+		EventData<net.aeten.core.parsing.Parser<NodeType>, ParsingEvent> {
 	private final NodeType nodeType;
-	private final String value, parent;
+	private final String value;
 
-	public ParsingData(Parser<NodeType> source, ParsingEvent event, NodeType nodeType, String value, String parent) {
-		super(source, event);
+	public ParsingData(Parser<NodeType> source,
+			ParsingEvent event,
+			NodeType nodeType,
+			String value) {
+		super (source, event);
 		this.nodeType = nodeType;
 		this.value = value;
-		this.parent = parent;
 	}
 
 	public NodeType getNodeType() {
@@ -25,8 +28,8 @@ public class ParsingData<NodeType extends Enum<?>> extends EventData<net.aeten.c
 		return this.value;
 	}
 
-	public String getParent() {
-		return this.parent;
+	@Override
+	public String toString() {
+		return "" + event + " " + nodeType + " " + value;
 	}
-
 }

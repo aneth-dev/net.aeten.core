@@ -117,8 +117,8 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements
 			return c;
 		}
 
-		protected static class EntryUnderConstruction {
-			public final StringBuilder input;
+		public static class EntryUnderConstruction {
+			private final StringBuilder input;
 			private final BufferedReader reader;
 			private String restored;
 
@@ -129,35 +129,70 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements
 				this.reader = reader;
 			}
 
-			public String getRestored() {
-				return restored;
-			}
-
-			public char getLastChar() {
+			public char peek() {
 				return input.charAt (input.length () - 1);
 			}
 
-			public void removeLastChar() {
+			public String peek(int backward) {
+				int start = input.length () - backward;
+				if (start < 0) {
+					return null;
+				}
+				return input.substring (start);
+			}
+
+			public int peekPrevious() {
+				int index = input.length () - 2;
+				if (index < 0) {
+					return -1;
+				}
+				return input.charAt (index);
+			}
+
+			public char pop() {
+				char last = peek ();
 				input.deleteCharAt (input.length () - 1);
+				return last;
 			}
 
-			public void restore(String toRestore) {
-				this.restored = toRestore;
+			public void restore(CharSequence toRestore) {
+				if (restored == null) {
+					restored = toRestore.toString ();
+				} else {
+					restored += toRestore;
+				}
 			}
 
-			public int read() {
+			public void restore(char toRestore) {
+				restore (Character.toString (toRestore));
+			}
+
+			public String getRestored() {
+				return restored == null ? null : restored.toString ();
+			}
+
+			public boolean checkNext(char expected) {
+				int next = -1;
 				try {
-					return reader.read ();
+					next = reader.read ();
+					if (next == expected) {
+						return true;
+					}
 				} catch (IOException exception) {
 					throw new Error (exception);
+				} finally {
+					if (next != -1) {
+						restore ((char) next);
+					}
 				}
+				return false;
 			}
 		}
 
 		protected static final Predicate<EntryUnderConstruction> END_OF_LINE = new Predicate<EntryUnderConstruction> () {
 			@Override
 			public boolean evaluate(EntryUnderConstruction element) {
-				switch (element.getLastChar ()) {
+				switch (element.peek ()) {
 				case CR:
 				case LF:
 				case NEL:
@@ -165,7 +200,7 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements
 				case FF:
 				case LS:
 				case PS:
-					element.removeLastChar ();
+					element.pop ();
 					return true;
 				default:
 					return false;
@@ -192,11 +227,11 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements
 				boolean errorIfendOfFile)
 				throws ParsingException {
 			StringBuilder entry = new StringBuilder ();
-			if (consumed != null) {
-				entry.append (consumed);
-				consumed = null;
-			}
 			while (true) {
+				if (consumed != null) {
+					entry.append (consumed);
+					consumed = null;
+				}
 				int c;
 				try {
 					c = read ();
@@ -207,7 +242,7 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements
 					if (errorIfendOfFile) {
 						error ("End of file reached");
 					}
-					return null;
+					return entry.length () > 0 ? entry.toString () : null;
 				}
 				entry.append ((char) c);
 				EntryUnderConstruction entryParameter = new EntryUnderConstruction (entry, reader);
@@ -248,21 +283,27 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements
 
 		protected void fireEvent(ParsingEvent event,
 				MarkupNode nodeType,
-				String value,
-				Tag<MarkupNode> parent) {
-			handler.handleEvent (new ParsingData<MarkupNode> (parser, event, nodeType, value, (parent == null) ? null : parent.name));
+				String value) {
+			ParsingData<MarkupNode> data = new ParsingData<> (parser, event, nodeType, value);
+			if (event == ParsingEvent.START_NODE || nodeType == MarkupNode.LIST || nodeType == MarkupNode.MAP || nodeType == MarkupNode.TAG) {
+				System.out.println (data);
+			}
+			handler.handleEvent (data);
 		}
 
-		protected void text(String value,
-				Tag<MarkupNode> parent) {
-			fireEvent (ParsingEvent.START_NODE, MarkupNode.TEXT, value, parent);
-			fireEvent (ParsingEvent.END_NODE, MarkupNode.TEXT, value, parent);
+		protected void text(String value) {
+			fireEvent (ParsingEvent.START_NODE, MarkupNode.TEXT, value);
+			fireEvent (ParsingEvent.END_NODE, MarkupNode.TEXT, value);
 		}
 
-		protected void type(String value,
-				Tag<MarkupNode> parent) {
-			fireEvent (ParsingEvent.START_NODE, MarkupNode.TYPE, value, parent);
-			fireEvent (ParsingEvent.END_NODE, MarkupNode.TYPE, value, parent);
+		protected void comment(String value) {
+			fireEvent (ParsingEvent.START_NODE, MarkupNode.COMMENT, value);
+			fireEvent (ParsingEvent.END_NODE, MarkupNode.COMMENT, value);
+		}
+
+		protected void type(String value) {
+			fireEvent (ParsingEvent.START_NODE, MarkupNode.TYPE, value);
+			fireEvent (ParsingEvent.END_NODE, MarkupNode.TYPE, value);
 		}
 
 	}
