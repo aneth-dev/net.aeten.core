@@ -3,11 +3,13 @@ package net.aeten.core.spi;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Generated;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -45,7 +47,7 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 			String pkg = processingEnv.getElementUtils().getPackageOf(getEnclosingClass(initializer)).getQualifiedName().toString();
 			String clazz = initializer.asType().toString();
 			debug(FieldInitializationProcessor.class.getSimpleName() + " process " + clazz);
-			try (PrintWriter writer = getWriter(processingEnv.getFiler().createSourceFile(pkg + "." + clazz, initializer), AbstractProcessor.WriteMode.CREATE, false)) {
+			try (PrintWriter writer = getWriter(processingEnv.getFiler().createSourceFile(pkg + "." + clazz, initializer), AbstractProcessor.WriteMode.OVERRIDE, false)) {
 				writer.println("package " + pkg + ";");
 				writer.println();
 				writeImport(writer, List.class, ArrayList.class, HashMap.class, Map.class, Generated.class, Factory.class, Document.class, FieldInitFactory.class, SpiConfiguration.class);
@@ -56,12 +58,12 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 				writer.println();
 				writer.println("	public " + clazz + "(" + SpiConfiguration.class.getSimpleName() + " configuration) {");
 				writer.println("		fieldsFactories = new HashMap<>();");
-				writer.println("		for (Document.Element element : configuration.root.asCollection()) {");
+				writer.println("		for (Document.Element element : configuration.root.asSequence()) {");
 				writer.println("			final String field;");
 				writer.println("			final Class<?> type;");
 				writer.println("			final List<Class<?>> parameterizedTypes = new ArrayList<>();");
-				writer.println("			final Document.Tag tag = element.asTag();");
-				writer.println("			switch (tag.getKey().asString()) {");
+				writer.println("			final Document.MappingEntry entry = element.asMappingEntry();");
+				writer.println("			switch (entry.getKey().asString()) {");
 				Element objectElement = processingEnv.getElementUtils().getTypeElement("java.lang.Object");
 				for (Element element = getEnclosingClass(initializer); !element.equals(objectElement); element = superTypeElement(element)) {
 					for (Element fieldInit : getElementsAnnotatedWith(element, FieldInit.class)) {
@@ -83,11 +85,30 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 								}
 							}
 						}
-						writer.println("				field = \"" + fieldInit.toString() + "\";");
-						writer.println("				type = " + getType(fieldInit) + ".class;");
+						
+						String typeName = getType(fieldInit);
 						TypeMirror type = fieldInit.asType();
+						List<TypeMirror> parameterizedTypes;
 						if (type instanceof DeclaredType) {
-							for (TypeMirror parameterized : ((DeclaredType) type).getTypeArguments()) {
+							parameterizedTypes = (List<TypeMirror>) ((DeclaredType) type).getTypeArguments();
+							if (typeName.equals(AtomicReference.class.getName())) {
+								type = parameterizedTypes.get(0);
+								typeName = type.toString();
+								parameterizedTypes = new ArrayList<>();
+								if (type instanceof DeclaredType) {
+									for (TypeMirror parameterizedType : ((DeclaredType) type).getTypeArguments()) {
+										parameterizedTypes.add(parameterizedType);
+									}
+								}
+							}
+						} else {
+							parameterizedTypes = Collections.emptyList();
+						}
+
+						writer.println("				field = \"" + fieldInit.toString() + "\";");
+						writer.println("				type = " + typeName + ".class;");
+						if (type instanceof DeclaredType) {
+							for (TypeMirror parameterized : parameterizedTypes) {
 								if (parameterized.getKind() == TypeKind.DECLARED) {
 									String className = (parameterized instanceof DeclaredType) ? ((DeclaredType) parameterized).asElement().toString() : parameterized.toString();
 									writer.println(String.format("				parameterizedTypes.add(%s.class);", className));
@@ -98,19 +119,52 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 					}
 				}
 				writer.println("			default:");
-				writer.println("				throw new IllegalArgumentException(String.format(\"No field named %s\", tag.getKey()));");
+				writer.println("				throw new IllegalArgumentException(String.format(\"No field named %s\", entry.getKey()));");
 				writer.println("			}");
 
-				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(tag.getValue(), type, parameterizedTypes, " + clazz + ".class.getClassLoader()));");
+				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(entry.getValue(), type, parameterizedTypes, " + clazz + ".class.getClassLoader()));");
 				writer.println("		}");
 				writer.println("	}");
 
 				for (Element element = getEnclosingClass(initializer); !element.equals(objectElement); element = superTypeElement(element)) {
 					for (Element fieldInit : getElementsAnnotatedWith(getEnclosingClass(element), FieldInit.class)) {
 						String fildName = fieldInit.toString();
-						clazz = getType(fieldInit);
-						writer.println("	public " + clazz + " get" + upperFirstChar(fildName) + "() {");
-						writer.println("		return (" + clazz + ") fieldsFactories.get(\"" + fildName + "\").create(null);");
+						
+						
+						String typeName = getType(fieldInit);
+						TypeMirror type = fieldInit.asType();
+						List<TypeMirror> parameterizedTypes;
+						if (type instanceof DeclaredType) {
+							parameterizedTypes = (List<TypeMirror>) ((DeclaredType) type).getTypeArguments();
+							if (typeName.equals(AtomicReference.class.getName())) {
+								type = parameterizedTypes.get(0);
+								typeName = type.toString();
+								parameterizedTypes = new ArrayList<>();
+								if (type instanceof DeclaredType) {
+									for (TypeMirror parameterizedType : ((DeclaredType) type).getTypeArguments()) {
+										parameterizedTypes.add(parameterizedType);
+									}
+								}
+							}
+						} else {
+							parameterizedTypes = Collections.emptyList();
+						}
+						
+						// TODO Add parameterized types and manage wildcards for non Type
+//						if (!parameterizedTypes.isEmpty()) {
+//							typeName += "<";
+//							for (Iterator<TypeMirror> it = parameterizedTypes.iterator(); it.hasNext();) {
+//								TypeMirror parameterizedType;
+//								typeName += it.next();
+//								if (it.hasNext()) {
+//									typeName += ", ";
+//								}
+//							}
+//							typeName += ">";
+//						}
+						
+						writer.println("	public " + typeName + " get" + upperFirstChar(fildName) + "() {");
+						writer.println("		return (" + typeName + ") fieldsFactories.get(\"" + fildName + "\").create(null);");
 						writer.println("	}");
 						AnnotationValue isRequiredValue = getAnnotationValue(fieldInit, FieldInit.class, "required");
 						if ((isRequiredValue != null) && ((Boolean) isRequiredValue.getValue() == false)) {

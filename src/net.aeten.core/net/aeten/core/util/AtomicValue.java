@@ -20,7 +20,7 @@ public interface AtomicValue<V> extends Getter<V>, Setter<V> {
 	 *            the new value
 	 */
 	public void lazySet(V newValue);
-
+	
 	/**
 	 * Atomically sets the value to the given updated value if the current value
 	 * equals the expected value. "Equals" means depends of implementation (like

@@ -43,8 +43,17 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 			if (!file.exists()) {
 				file.getParentFile().mkdirs();
 			}
-			if (file.exists() && !file.isDirectory() && (mode == WriteMode.CREATE)) {
-				throw new IOException("File \"" + file + "\" already exist");
+			if (file.exists() && !file.isDirectory()) {
+				switch (mode) {
+				case CREATE:
+					throw new IOException("File \"" + file + "\" already exist");
+				case OVERRIDE:
+					file.delete();
+					break;
+				case APPEND:
+				default:
+					break;
+				}
 			}
 
 			if (mode == WriteMode.APPEND) {

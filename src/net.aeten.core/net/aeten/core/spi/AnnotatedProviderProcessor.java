@@ -157,7 +157,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 		
 		try {
 			FileObject fileObject = processingEnv.getFiler().createSourceFile(pkg + "." + name, element);
-			try (PrintWriter writer = getWriter(fileObject, WriteMode.CREATE, false)) {
+			try (PrintWriter writer = getWriter(fileObject, WriteMode.OVERRIDE, false)) {
 				TypeMirror initializerType = null;
 				Iterator<? extends TypeMirror> thrownTypes = null;
 				for (Element enclosedElement : providerElement.getEnclosedElements()) {

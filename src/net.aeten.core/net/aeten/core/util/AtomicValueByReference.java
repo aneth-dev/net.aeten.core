@@ -55,7 +55,7 @@ public final class AtomicValueByReference<V> implements AtomicValue<V>, Serializ
 
 	@Override
 	public boolean weakCompareAndSet(V expect, Factory<V, Void> update) {
-		return reference.compareAndSet(expect, update.create(null));
+		return reference.weakCompareAndSet(expect, update.create(null));
 	}
 
 }

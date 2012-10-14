@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.TypeVariable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.InetAddress;
@@ -16,12 +17,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import net.aeten.core.Factory;
 import net.aeten.core.Identifiable;
 import net.aeten.core.Predicate;
 import net.aeten.core.parsing.Document;
-import net.aeten.core.parsing.Document.Element.ElementType;
+import net.aeten.core.parsing.Document.ElementType;
 
 /**
  * 
@@ -43,7 +45,19 @@ public class FieldInitFactory<T, P> implements
 		return factory.create(parameter);
 	}
 
-	public static Factory<Object, Void> create(final Document.Element configuration, final Class<?> type, final List<Class<?>> parameterizedTypes, final ClassLoader classLoader) {
+	public static Factory<Object, Void> create(final Document.Element configuration, Class<?> fieldType, final List<Class<?>> parameterizedTypes, final ClassLoader classLoader) {
+
+		final Class<?> type;
+		if (fieldType.equals(AtomicReference.class)) {
+			type = parameterizedTypes.get(0);
+			parameterizedTypes.clear();
+			for (TypeVariable<?> parameterizedType : type.getTypeParameters()) {
+				parameterizedTypes.add((Class<?>) parameterizedType.getGenericDeclaration());
+			}
+		} else {
+			type = fieldType;
+		}
+		
 		// Simple class name given, try default constructor
 		if (configuration.value == null || configuration.elementType == ElementType.STRING && configuration.asString().isEmpty()) {
 			if (configuration.valueType == null) {
@@ -159,7 +173,7 @@ public class FieldInitFactory<T, P> implements
 			@Override
 			public Object create(Void context) {
 				List<Object> list = new ArrayList<>();
-				for (Document.Element child : configuration.asCollection()) {
+				for (Document.Element child : configuration.asSequence()) {
 					Class<?> elementType = parameterizedTypes.get(0);
 					list.add(FieldInitFactory.create(child, elementType, Collections.<Class<?>> emptyList(), elementType.getClassLoader()).create(null));
 				}
@@ -173,8 +187,8 @@ public class FieldInitFactory<T, P> implements
 			@Override
 			public Object create(Void context) {
 				Map<String, Object> map = new LinkedHashMap<>();
-				for (Document.Element child : configuration.asCollection()) {
-					Document.Tag tag = child.asTag();
+				for (Document.Element child : configuration.asSequence()) {
+					Document.MappingEntry tag = child.asMappingEntry();
 					Class<?> elementType = parameterizedTypes.get(1);
 					map.put(tag.getKey().asString(), FieldInitFactory.create(tag.getValue(), elementType, Collections.<Class<?>> emptyList(), elementType.getClassLoader()).create(null));
 				}
@@ -415,7 +429,14 @@ public class FieldInitFactory<T, P> implements
 		public InetSocketAddress create(String value) {
 			try {
 				String[] socket = value.split(":");
-				return new InetSocketAddress(InetAddress.getByName(socket[0]), Integer.valueOf(socket[1]));
+				switch (socket.length) {
+				case 1:
+					return new InetSocketAddress(Integer.valueOf(socket[0]));
+				case 2:
+					return new InetSocketAddress(InetAddress.getByName(socket[0]), Integer.valueOf(socket[1]));
+				default:
+					throw new IllegalArgumentException(value);
+				}
 			} catch (UnknownHostException ex) {
 				throw new IllegalArgumentException(value, ex);
 			}
@@ -453,8 +474,8 @@ public class FieldInitFactory<T, P> implements
 		public T create(Document.Element configuration) {
 			try {
 				Class<? extends T> type = (Class<? extends T>) Class.forName(configuration.valueType);
-				if (configuration.asCollection().size() == 1 && configuration.asCollection().getFirst().asTag().getKey().asString().equals("underlying")) {
-					Document.Tag underlying = configuration.asCollection().getFirst().asTag();
+				if (configuration.asSequence().size() == 1 && configuration.asSequence().getFirst().asMappingEntry().getKey().asString().equals("underlying")) {
+					Document.MappingEntry underlying = configuration.asSequence().getFirst().asMappingEntry();
 					return type.getConstructor(getTypes()[0]).newInstance(FieldInitFactory.create(underlying.getValue(), getTypes()[0], Collections.<Class<?>> emptyList(), Thread.currentThread().getContextClassLoader()).create(null));
 				}
 				if (configuration.valueType != null) {
@@ -466,4 +487,5 @@ public class FieldInitFactory<T, P> implements
 			}
 		}
 	}
+
 }

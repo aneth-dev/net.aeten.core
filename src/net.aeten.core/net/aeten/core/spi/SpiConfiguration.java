@@ -24,7 +24,7 @@ public class SpiConfiguration {
 	public SpiConfiguration(String packageName, String resourceName, String parserIdentifier, Class<?> instanceClass) {
 		String resource = packageName.replace('.', '/') + "/" + resourceName;
 		Parser<MarkupNode> parser;
-		if (parserIdentifier.isEmpty()) {
+		if (parserIdentifier == null || parserIdentifier.isEmpty()) {
 			int extensionIndex = resourceName.lastIndexOf('.');
 			if ((extensionIndex == -1) || (extensionIndex == (resourceName.length() + 1))) {
 				throw new IllegalArgumentException("Unable to find parser without extension in resource file " + resourceName);
