@@ -57,7 +57,7 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 			}
 
 			if (mode == WriteMode.APPEND) {
-				return new PrintWriter(new FileWriter(file, false));
+				return new PrintWriter(new FileWriter(file, true));
 			}
 			return new PrintWriter(fileObject.openOutputStream(), autoFlush);
 		} catch (UnsupportedOperationException exception) {
@@ -88,8 +88,18 @@ public abstract class AbstractProcessor extends javax.annotation.processing.Abst
 		return null;
 	}
 
+	protected static boolean annotationMirrorMatches(TypeMirror annotation, Class<? extends Annotation> annotationClass) {
+		if (annotation instanceof AnnotationMirror) {
+			return annotationMirrorMatches((AnnotationMirror) annotation, annotationClass);
+		} else {
+			return annotationMirrorMatches((DeclaredType) annotation, annotationClass);
+		}
+	}
 	protected static boolean annotationMirrorMatches(AnnotationMirror annotation, Class<? extends Annotation> annotationClass) {
-		Name qualifiedName = ((TypeElement) (annotation.getAnnotationType()).asElement()).getQualifiedName();
+		return annotationMirrorMatches(annotation.getAnnotationType (), annotationClass);
+	}
+	protected static boolean annotationMirrorMatches(DeclaredType annotation, Class<? extends Annotation> annotationClass) {
+		Name qualifiedName = ((TypeElement) (annotation).asElement()).getQualifiedName();
 		return qualifiedName.contentEquals(annotationClass.getName());
 	}
 
