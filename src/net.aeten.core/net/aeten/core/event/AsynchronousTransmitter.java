@@ -55,7 +55,7 @@ public class AsynchronousTransmitter<Event, Data extends EventData<?, Event>> im
 	}
 
 	AsynchronousTransmitter(final String identifier, RegisterableTransmitter<Event, Data> transmitter, boolean autoStart) {
-		this(identifier, transmitter, autoStart, 1, 1, 0L, TimeUnit.MILLISECONDS, new TransmissionTaskPriorityQueue(), new ThreadFactory() {
+		this(identifier, transmitter, autoStart, 0, 1, 0L, TimeUnit.MILLISECONDS, new TransmissionTaskPriorityQueue(), new ThreadFactory() {
 			private final AtomicInteger counter = new AtomicInteger(0);
 
 			@Override
