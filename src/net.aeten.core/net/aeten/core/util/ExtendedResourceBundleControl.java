@@ -56,7 +56,8 @@ public class ExtendedResourceBundleControl extends Control {
 
 	@Override
 	public ResourceBundle newBundle(String baseName, Locale locale, String format, ClassLoader loader, boolean reload) throws IllegalAccessException, InstantiationException, IOException {
-		if (!FORMAT_XML.equals(format) && !format.endsWith(FORMAT_PROPERTY_SUFFIX))
+		format = format.toLowerCase ();
+		if (!FORMAT_XML.equals (format) && !format.endsWith(FORMAT_PROPERTY_SUFFIX))
 			return super.newBundle(baseName, locale, format, loader, reload);
 
 		String bundleName = toBundleName(baseName, locale);
