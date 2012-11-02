@@ -9,6 +9,7 @@ import net.aeten.core.event.Handler;
 
 public abstract class AbstractParser<NodeType extends Enum<?>> implements
 		Parser<NodeType> {
+	protected static final int EOF = -1; // End of file
 	protected static final char CR = '\r'; // Carriage Return
 	protected static final char LF = '\n'; // Line Feed
 	protected static final char NEL = 0x0085; // Next Line
@@ -203,11 +204,11 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements
 				} catch (Throwable exception) {
 					throw new ParsingException (exception);
 				}
-				if (c == -1) {
+				if (c == EOF) {
 					if (errorIfendOfFile) {
 						error ("End of file reached");
 					}
-					return null;
+					return (entry.length () == 0) ? null : entry.toString ();
 				}
 				entry.append ((char) c);
 				EntryUnderConstruction entryParameter = new EntryUnderConstruction (entry, reader);
