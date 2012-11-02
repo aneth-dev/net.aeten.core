@@ -27,7 +27,6 @@ import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 
 import net.aeten.core.Factory;
-import net.aeten.core.logging.LogLevel;
 import net.aeten.core.parsing.Document;
 
 @Provider (Processor.class)
@@ -42,7 +41,7 @@ public class FieldInitializationProcessor extends
 	@Override
 	public synchronized void init (ProcessingEnvironment processingEnv) {
 		super.init (processingEnv);
-		this.logLevel = LogLevel.DEBUG;
+		debug = true;
 	}
 
 	@Override

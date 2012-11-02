@@ -6,9 +6,10 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-import net.aeten.core.logging.LogLevel;
-import net.aeten.core.logging.Logger;
 import net.jcip.annotations.ThreadSafe;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -19,6 +20,8 @@ import net.jcip.annotations.ThreadSafe;
  */
 @ThreadSafe
 public class Internationalizer<T extends Enum<?>> {
+	private static final Logger LOGGER = LoggerFactory.getLogger (Internationalizer.class);
+	
 	private final String description;
 
 	private final MessageFormat[] messageFormat;
@@ -40,29 +43,29 @@ public class Internationalizer<T extends Enum<?>> {
 	}
 
 	public Internationalizer(Class<T> clazz, Locale locale, ResourceBundle.Control resourceBundleControl) {
-		this.description = "Internationalizer for " + clazz.getName() + ", with locale " + locale;
+		description = "Internationalizer for " + clazz.getName() + ", with locale " + locale;
 		final T[] enumConstants = clazz.getEnumConstants();
 		ResourceBundle resourceBundle;
 		try {
 			resourceBundle = ResourceBundle.getBundle(clazz.getName(), locale, clazz.getClassLoader(), resourceBundleControl);
 		} catch (MissingResourceException exception) {
-			Logger.log(this, LogLevel.ERROR, exception);
+			LOGGER.error ("Resource for " + clazz.getName() + ", with locale " + locale + " is missing", exception);
 			resourceBundle = new NullResourceBundle();
 		}
 
-		this.messageFormat = new MessageFormat[enumConstants.length];
-		this.pattern = new String[enumConstants.length];
+		messageFormat = new MessageFormat[enumConstants.length];
+		pattern = new String[enumConstants.length];
 		for (int i = 0; i < enumConstants.length; i++) {
 			try {
-				this.pattern[i] = resourceBundle.getString(enumConstants[i].name());
+				pattern[i] = resourceBundle.getString(enumConstants[i].name());
 			} catch (MissingResourceException exception) {
 				if (!(resourceBundle instanceof NullResourceBundle)) {
-					Logger.log(this, LogLevel.ERROR, "Pattern not found for " + clazz.getName() + "." + enumConstants[i].name() + ", locale " + locale, exception);
+					LOGGER.error ("Pattern not found for " + clazz.getName() + "." + enumConstants[i].name() + ", locale " + locale, exception);
 				}
 				String result = enumConstants[i].name().replace('_', ' ').trim();
-				this.pattern[i] = result.substring(0, 1).toUpperCase(Locale.ENGLISH) + result.substring(1).toLowerCase(Locale.ENGLISH);
+				pattern[i] = result.substring(0, 1).toUpperCase(Locale.ENGLISH) + result.substring(1).toLowerCase(Locale.ENGLISH);
 			}
-			this.messageFormat[i] = new MessageFormat(this.pattern[i]);
+			messageFormat[i] = new MessageFormat(pattern[i]);
 		}
 	}
 
@@ -87,11 +90,11 @@ public class Internationalizer<T extends Enum<?>> {
 	}
 	
 	public String getPattern(T key_p) {
-		return this.pattern[key_p.ordinal()];
+		return pattern[key_p.ordinal()];
 	}
 
 	@Override
 	public String toString() {
-		return this.description;
+		return description;
 	}
 }

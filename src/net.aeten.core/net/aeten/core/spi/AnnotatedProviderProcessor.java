@@ -31,8 +31,6 @@ import javax.lang.model.type.TypeMirror;
 import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
-import net.aeten.core.logging.LogLevel;
-
 /**
  *
  * @author Thomas Pérennou
@@ -52,7 +50,7 @@ public class AnnotatedProviderProcessor extends
 	@Override
 	public synchronized void init (ProcessingEnvironment processingEnv) {
 		super.init (processingEnv);
-		this.logLevel = LogLevel.DEBUG;
+		this.debug = true;
 	}
 
 	@SuppressWarnings ("unchecked")
