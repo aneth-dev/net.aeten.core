@@ -20,6 +20,7 @@ import net.aeten.core.Identifiable;
 import net.aeten.core.spi.Provider;
 import net.aeten.core.util.StringUtil;
 
+/* TODO to be replaced by a Factory, then remove ConfigurationException */
 @Provider(ScheduledExecutorService.class)
 public class ScheduledExecutor implements ScheduledExecutorService, Identifiable {
 	private static final String IDENTIFIER_OPTION = "--identifier";
