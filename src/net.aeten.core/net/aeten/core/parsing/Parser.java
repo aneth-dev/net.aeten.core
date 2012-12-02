@@ -1,6 +1,7 @@
 package net.aeten.core.parsing;
 
 import java.io.Reader;
+
 import net.aeten.core.Identifiable;
 import net.aeten.core.event.Handler;
 
