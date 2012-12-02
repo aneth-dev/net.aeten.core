@@ -1,6 +1,7 @@
 package net.aeten.core.spi;
 
 import java.io.InputStreamReader;
+
 import net.aeten.core.Format;
 import net.aeten.core.Predicate;
 import net.aeten.core.parsing.Document;
@@ -19,6 +20,10 @@ public class SpiConfiguration {
 		this.root = configuration;
 	}
 
+	
+	public SpiConfiguration(Package package_, String resourceName, String parserIdentifier, Class<?> instanceClass) {
+		this (package_.getName (), resourceName, parserIdentifier, instanceClass); 
+	}
 	
 	@SuppressWarnings("unchecked")
 	public SpiConfiguration(String packageName, String resourceName, String parserIdentifier, Class<?> instanceClass) {
