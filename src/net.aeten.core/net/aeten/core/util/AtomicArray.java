@@ -9,7 +9,7 @@ public interface AtomicArray<E> {
 	 * 
 	 * @return the length of the array
 	 */
-	public int length();
+	public int length ();
 
 	/**
 	 * Gets the current value at position {@code i}.
@@ -18,7 +18,7 @@ public interface AtomicArray<E> {
 	 *            the index
 	 * @return the current value
 	 */
-	public E get(int i);
+	public E get (int i);
 
 	/**
 	 * Sets the element at position {@code i} to the given value.
@@ -28,7 +28,8 @@ public interface AtomicArray<E> {
 	 * @param newValue
 	 *            the new value
 	 */
-	public void set(int i, E newValue);
+	public void set (	int i,
+							E newValue);
 
 	/**
 	 * Eventually sets the element at position {@code i} to the given value.
@@ -38,7 +39,8 @@ public interface AtomicArray<E> {
 	 * @param newValue
 	 *            the new value
 	 */
-	public void lazySet(int i, E newValue);
+	public void lazySet (int i,
+								E newValue);
 
 	/**
 	 * Atomically sets the element at position {@code i} to the given value and
@@ -50,7 +52,8 @@ public interface AtomicArray<E> {
 	 *            the new value
 	 * @return the previous value
 	 */
-	public E getAndSet(int i, E newValue);
+	public E getAndSet (	int i,
+								E newValue);
 
 	/**
 	 * Atomically sets the element at position {@code i} to the given updated
@@ -66,9 +69,13 @@ public interface AtomicArray<E> {
 	 * @return true if successful. False return indicates that the actual value
 	 *         was not equal to the expected value.
 	 */
-	public boolean compareAndSet(int i, E expect, E update);
+	public boolean compareAndSet (int i,
+											E expect,
+											E update);
 
-	public boolean compareAndSet(int i, E expect, Factory<E, Void> update);
+	public boolean compareAndSet (int i,
+											E expect,
+											Factory <E, Void> update);
 
 	/**
 	 * Atomically sets the element at position {@code i} to the given updated
@@ -87,9 +94,13 @@ public interface AtomicArray<E> {
 	 *            the new value
 	 * @return true if successful.
 	 */
-	public boolean weakCompareAndSet(int i, E expect, E update);
+	public boolean weakCompareAndSet (	int i,
+													E expect,
+													E update);
 
-	public boolean weakCompareAndSet(int i, E expect, Factory<E, Void> update);
+	public boolean weakCompareAndSet (	int i,
+													E expect,
+													Factory <E, Void> update);
 
 	/**
 	 * Returns the String representation of the current values of array.
@@ -97,6 +108,6 @@ public interface AtomicArray<E> {
 	 * @return the String representation of the current values of array.
 	 */
 	@Override
-	public String toString();
+	public String toString ();
 
 }

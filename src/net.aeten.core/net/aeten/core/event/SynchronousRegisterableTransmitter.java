@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Pérennou
  */
 @ThreadSafe
-class SynchronousRegisterableTransmitter <Event, Data extends EventData <?, Event>> implements
+class SynchronousRegisterableTransmitter<Event, Data extends EventData <?, Event>> implements
 		RegisterableTransmitter <Event, Data> {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger (SynchronousRegisterableTransmitter.class);

@@ -52,7 +52,7 @@ public class JarExtractor {
 				fos = new FileOutputStream (file);
 				int count;
 				byte[] buf = new byte[1024];
-				while ( (count = is.read (buf, 0, buf.length)) > 0) {
+				while ((count = is.read (buf, 0, buf.length)) > 0) {
 					fos.write (buf, 0, count);
 				}
 			} catch (IOException exception) {

@@ -42,7 +42,7 @@ public class Platform {
 
 	public final static String OS_NAME = System.getProperty ("os.name");
 	public final static String ARCH_NAME = System.getProperty ("os.arch").toLowerCase ();
-	
+
 	static {
 		if (OS_NAME.startsWith ("Linux")) {
 			OS = OperatingSystem.LINUX;
@@ -86,7 +86,7 @@ public class Platform {
 			ARCH = Arch.UNKNOWN;
 			break;
 		}
-}
+	}
 
 	public static final boolean isLinux () {
 		return OS == OperatingSystem.LINUX;

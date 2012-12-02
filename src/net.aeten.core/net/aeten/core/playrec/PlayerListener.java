@@ -2,7 +2,7 @@ package net.aeten.core.playrec;
 
 import java.util.Date;
 
-public interface PlayerListener <T extends Record> {
+public interface PlayerListener<T extends Record> {
 	/**
 	 * @param player the event trigger
 	 **/
@@ -23,7 +23,7 @@ public interface PlayerListener <T extends Record> {
 						Date date,
 						double position);
 
-	public abstract class Adapter <T extends Record> implements
+	public abstract class Adapter<T extends Record> implements
 			PlayerListener <T> {
 
 		@Override

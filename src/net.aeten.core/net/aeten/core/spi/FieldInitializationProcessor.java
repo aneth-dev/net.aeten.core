@@ -50,8 +50,8 @@ public class FieldInitializationProcessor extends
 									RoundEnvironment roundEnv) {
 		for (Element initializer: roundEnv.getElementsAnnotatedWith (SpiInitializer.class)) {
 			Element enclosingClass = getEnclosingClass (initializer);
-			AnnotationValue generate = getAnnotationValue (getAnnotationMirror (initializer,  SpiInitializer.class), "generate");
-			if (! ((Boolean) generate.getValue ())) {
+			AnnotationValue generate = getAnnotationValue (getAnnotationMirror (initializer, SpiInitializer.class), "generate");
+			if (!((Boolean) generate.getValue ())) {
 				continue;
 			}
 			String pkg = processingEnv.getElementUtils ().getPackageOf (enclosingClass).getQualifiedName ().toString ();
@@ -181,7 +181,7 @@ public class FieldInitializationProcessor extends
 						writer.println ("		return (" + typeName + ") fieldsFactories.get(\"" + fildName + "\").create(null);");
 						writer.println ("	}");
 						AnnotationValue isRequiredValue = getAnnotationValue (fieldInit, FieldInit.class, "required");
-						if ( (isRequiredValue != null) && ((Boolean) isRequiredValue.getValue () == false)) {
+						if ((isRequiredValue != null) && ((Boolean) isRequiredValue.getValue () == false)) {
 							writer.println ("	public boolean has" + upperFirstChar (fildName) + "() {");
 							writer.println ("		return fieldsFactories.containsKey(\"" + fildName + "\");");
 							writer.println ("	}");

@@ -11,7 +11,9 @@ import net.aeten.core.Setter;
  * @param <V>
  *            The type of object referred to by this reference
  */
-public interface AtomicValue<V> extends Getter<V>, Setter<V> {
+public interface AtomicValue<V> extends
+		Getter <V>,
+		Setter <V> {
 
 	/**
 	 * Eventually sets to the given value.
@@ -19,8 +21,8 @@ public interface AtomicValue<V> extends Getter<V>, Setter<V> {
 	 * @param newValue
 	 *            the new value
 	 */
-	public void lazySet(V newValue);
-	
+	public void lazySet (V newValue);
+
 	/**
 	 * Atomically sets the value to the given updated value if the current value
 	 * equals the expected value. "Equals" means depends of implementation (like
@@ -33,7 +35,8 @@ public interface AtomicValue<V> extends Getter<V>, Setter<V> {
 	 * @return true if successful. False return indicates that the actual value
 	 *         was not equal to the expected value.
 	 */
-	public boolean compareAndSet(V expect, V update);
+	public boolean compareAndSet (V expect,
+											V update);
 
 	/**
 	 * Atomically sets the value to the given updated value if the current value
@@ -47,7 +50,8 @@ public interface AtomicValue<V> extends Getter<V>, Setter<V> {
 	 * @return true if successful. False return indicates that the actual value
 	 *         was not equal to the expected value.
 	 */
-	public boolean compareAndSet(V expect, Factory<V, Void> update);
+	public boolean compareAndSet (V expect,
+											Factory <V, Void> update);
 
 	/**
 	 * Atomically sets the value to the given updated value if the current value
@@ -64,7 +68,8 @@ public interface AtomicValue<V> extends Getter<V>, Setter<V> {
 	 *            the new value
 	 * @return true if successful.
 	 */
-	public boolean weakCompareAndSet(V expect, V update);
+	public boolean weakCompareAndSet (	V expect,
+													V update);
 
 	/**
 	 * Atomically sets the value to the given updated value if the current value
@@ -81,7 +86,8 @@ public interface AtomicValue<V> extends Getter<V>, Setter<V> {
 	 *            the factory of the new value
 	 * @return true if successful.
 	 */
-	public boolean weakCompareAndSet(V expect, Factory<V, Void> update);
+	public boolean weakCompareAndSet (	V expect,
+													Factory <V, Void> update);
 
 	/**
 	 * Atomically sets to the given value and returns the old value.
@@ -90,6 +96,6 @@ public interface AtomicValue<V> extends Getter<V>, Setter<V> {
 	 *            the new value
 	 * @return the previous value
 	 */
-	public V getAndSet(V newValue);
+	public V getAndSet (V newValue);
 
 }

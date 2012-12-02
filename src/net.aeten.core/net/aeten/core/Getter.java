@@ -6,5 +6,5 @@ public interface Getter<T> {
 	 * 
 	 * @return the current value
 	 */
-	T get();
+	T get ();
 }

@@ -17,8 +17,8 @@ public class NativeLibraryLoader {
 		}
 	}
 
-	public static File loadNativeLibrary(Class<?> loadinClass,
-			String lname) {
+	public static File loadNativeLibrary (	Class <?> loadinClass,
+														String lname) {
 		String libname = System.mapLibraryName (lname);
 		String resourceName = getNativeResourcePath () + "/" + libname;
 		URL url = loadinClass.getResource (resourceName);
@@ -55,7 +55,7 @@ public class NativeLibraryLoader {
 				 * except on windows, to avoid problems with Web Start.
 				 */
 				File dir = getTempDir ();
-				lib = new File(dir, lname + (Platform.isWindows () ? ".dll" : ""));
+				lib = new File (dir, lname + (Platform.isWindows ()? ".dll": ""));
 				if (lib.exists ()) {
 					return lib;
 				}
@@ -91,7 +91,7 @@ public class NativeLibraryLoader {
 		}
 		return lib;
 	}
-	
+
 	public static String getNativeResourcePath () {
 		String osPrefix;
 		switch (Platform.OS) {
@@ -122,8 +122,6 @@ public class NativeLibraryLoader {
 		return osPrefix;
 	}
 
-
-
 	/** Remove any automatically unpacked native library.
 
 	This will fail on windows, which disallows removal of any file that is
@@ -135,7 +133,7 @@ public class NativeLibraryLoader {
 	that introduces issues with cleaning up any extant JNA bits
 	(e.g. Memory) which may still need use of the library before shutdown.
 	*/
-	static boolean deleteNativeLibrary(String path) {
+	static boolean deleteNativeLibrary (String path) {
 		File flib = new File (path);
 		if (flib.delete ()) {
 			return true;
@@ -149,7 +147,7 @@ public class NativeLibraryLoader {
 
 	/** Perform cleanup of automatically unpacked native shared library.
 	 */
-	static void markTemporaryFile(File file) {
+	static void markTemporaryFile (File file) {
 		// If we can't force an unload/delete, flag the file for later 
 		// deletion
 		try {
@@ -160,12 +158,11 @@ public class NativeLibraryLoader {
 		}
 	}
 
-	static File getTempDir() {
+	static File getTempDir () {
 		File tmp = new File (System.getProperty ("java.io.tmpdir"));
 		File nativeTmp = new File (tmp, "java-native-" + System.getProperty ("user.name"));
 		nativeTmp.mkdirs ();
-		return nativeTmp.exists () ? nativeTmp : tmp;
+		return nativeTmp.exists ()? nativeTmp: tmp;
 	}
-
 
 }

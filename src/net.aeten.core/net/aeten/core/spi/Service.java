@@ -194,7 +194,7 @@ public class Service {
 		}
 	}
 
-	private static class ServiceIterableAdapter <T> implements
+	private static class ServiceIterableAdapter<T> implements
 			Iterable <T> {
 
 		private final Iterator <T> hotpluggedServices;

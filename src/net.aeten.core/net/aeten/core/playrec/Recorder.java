@@ -1,6 +1,6 @@
 package net.aeten.core.playrec;
 
-public interface Recorder <T extends Record> {
+public interface Recorder<T extends Record> {
 	void start ();
 
 	void stop ();

@@ -121,7 +121,7 @@ public class ProviderProcessor extends
 						String line;
 
 						try {
-							while ( (line = reader.readLine ()) != null) {
+							while ((line = reader.readLine ()) != null) {
 								copy.write (line + "\n");
 								if (line.trim ().equals (providerClassName)) {
 									alreadyRegistered = true;
@@ -223,7 +223,7 @@ public class ProviderProcessor extends
 				writeImport (writer, toImport, Generated.class, Provider.class, SpiConfiguration.class);
 				writer.println ();
 				writer.println ("@Generated(\"" + ProviderProcessor.class.getName () + "\")");
-				writer.print ("@" + Provider.class.getSimpleName () + ( (services.size () > 1)? "({": "("));
+				writer.print ("@" + Provider.class.getSimpleName () + ((services.size () > 1)? "({": "("));
 
 				for (Iterator <TypeElement> iterator = services.iterator (); iterator.hasNext ();) {
 					writer.print (getClassOf (iterator.next ()) + ".class");
@@ -231,7 +231,7 @@ public class ProviderProcessor extends
 						writer.write (", ");
 					}
 				}
-				writer.println ( ( (services.size () > 1)? "})": ")"));
+				writer.println (((services.size () > 1)? "})": ")"));
 				writer.println ("public class " + name + " extends " + providerClassName + " {");
 				writer.print ("	public " + name + " ()");
 				if (thrownTypes.hasNext ()) {
