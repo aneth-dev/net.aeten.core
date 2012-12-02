@@ -1,2 +1,2 @@
 net.aeten.core.spi.FieldInitializationProcessor
-net.aeten.core.spi.AnnotatedProviderProcessor
+net.aeten.core.spi.ProviderProcessor
