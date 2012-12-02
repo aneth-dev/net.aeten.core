@@ -60,11 +60,7 @@ public abstract class AbstractProcessor extends
 					break;
 				}
 			}
-
-			if (mode == WriteMode.APPEND) {
-				return new PrintWriter (new FileWriter (file, true));
-			}
-			return new PrintWriter (fileObject.openOutputStream (), autoFlush);
+			return new PrintWriter (new FileWriter (file, mode == WriteMode.APPEND));
 		} catch (UnsupportedOperationException exception) {
 			return new PrintWriter (fileObject.openOutputStream (), autoFlush);
 		} catch (IllegalArgumentException exception) {

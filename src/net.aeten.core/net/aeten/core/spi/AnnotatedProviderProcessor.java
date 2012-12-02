@@ -107,7 +107,7 @@ public class AnnotatedProviderProcessor extends
 							try {
 								fileObject = processingEnv.getFiler ().createResource (StandardLocation.SOURCE_OUTPUT, "", "META-INF/services/" + service);
 							} catch (Exception exception) {
-								fileObject = processingEnv.getFiler ().getResource (StandardLocation.CLASS_OUTPUT, "", "META-INF/services/" + service);
+								fileObject = processingEnv.getFiler ().getResource (StandardLocation.SOURCE_OUTPUT, "", "META-INF/services/" + service);
 							}
 						}
 						servicesFileObjects.put (service, fileObject);
