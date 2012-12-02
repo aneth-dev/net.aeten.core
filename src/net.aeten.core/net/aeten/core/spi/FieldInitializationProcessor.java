@@ -44,13 +44,22 @@ public class FieldInitializationProcessor extends
 		debug = true;
 	}
 
+	@SuppressWarnings ("unchecked")
 	@Override
 	public boolean process (Set <? extends TypeElement> annotations,
 									RoundEnvironment roundEnv) {
 		for (Element initializer: roundEnv.getElementsAnnotatedWith (SpiInitializer.class)) {
 			Element enclosingClass = getEnclosingClass (initializer);
+			AnnotationValue generate = getAnnotationValue (getAnnotationMirror (initializer,  SpiInitializer.class), "generate");
+			if (! ((Boolean) generate.getValue ())) {
+				continue;
+			}
 			String pkg = processingEnv.getElementUtils ().getPackageOf (enclosingClass).getQualifiedName ().toString ();
 			String clazz = initializer.asType ().toString ();
+			/* Tweak: when Class is already generated, clazz is {package.name}.{ClassName} */
+			if (!pkg.isEmpty () && clazz.startsWith (pkg)) {
+				continue;
+			}
 
 			debug (FieldInitializationProcessor.class.getSimpleName () + " process " + clazz);
 			try (PrintWriter writer = getWriter (processingEnv.getFiler ().createSourceFile (clazz.startsWith (pkg)? clazz: pkg + "." + clazz, initializer), AbstractProcessor.WriteMode.OVERRIDE, false)) {

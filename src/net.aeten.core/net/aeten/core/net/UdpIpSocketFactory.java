@@ -57,7 +57,7 @@ public class UdpIpSocketFactory {
 	private final Integer timeToLive;
 	private DatagramSocket socket;
 
-	public UdpIpSocketFactory (@SpiInitializer UdpIpSocketFactoryInitializer init)
+	public UdpIpSocketFactory (@SpiInitializer(generate=false) UdpIpSocketFactoryInitializer init)
 			throws IOException {
 		this.destinationInetSocketAddress = init.getDestinationInetSocketAddress ();
 		this.sourceInetAddress = init.hasSourceInetAddress ()? init.getSourceInetAddress (): null;
