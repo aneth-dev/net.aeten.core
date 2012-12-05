@@ -51,11 +51,12 @@ public class FieldInitializationProcessor extends
 		for (Element initializer: roundEnv.getElementsAnnotatedWith (SpiInitializer.class)) {
 			Element enclosingClass = getEnclosingClass (initializer);
 			AnnotationValue generate = getAnnotationValue (getAnnotationMirror (initializer, SpiInitializer.class), "generate");
+			String clazz = initializer.asType ().toString ();
 			if (!((Boolean) generate.getValue ())) {
+				debug(FieldInitializationProcessor.class.getSimpleName () + " pass " + clazz);
 				continue;
 			}
 			String pkg = processingEnv.getElementUtils ().getPackageOf (enclosingClass).getQualifiedName ().toString ();
-			String clazz = initializer.asType ().toString ();
 			/* Tweak: when Class is already generated, clazz is {package.name}.{ClassName} */
 			if (!pkg.isEmpty () && clazz.startsWith (pkg)) {
 				continue;
