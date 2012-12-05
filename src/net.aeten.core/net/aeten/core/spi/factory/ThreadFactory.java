@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.aeten.core.spi.SpiFactory;
 
-class ThreadFactory implements
+public class ThreadFactory implements
 		SpiFactory <java.util.concurrent.ThreadFactory, String> {
 	private static final AtomicInteger threadCount = new AtomicInteger (0);
 
