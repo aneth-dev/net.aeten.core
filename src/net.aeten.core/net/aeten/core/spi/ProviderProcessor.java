@@ -139,6 +139,7 @@ public class ProviderProcessor extends
 							writer.write (copy.toString ());
 							writer.println (providerClassName);
 							note (ProviderProcessor.class.getSimpleName () + " add provider " + providerClassName + " for service " + service);
+							writer.close ();
 						}
 					}
 				} catch (IOException
@@ -158,7 +159,7 @@ public class ProviderProcessor extends
 		String name = getClassName (nameAnnotationValue);
 		String pkg = processingEnv.getElementUtils ().getPackageOf (element).getQualifiedName ().toString ();
 
-		note (ProviderProcessor.class.getName () + " creates " + pkg + "." + name);
+		note (ProviderProcessor.class.getSimpleName () + " creates " + pkg + "." + name);
 
 		TypeElement providerElement = toElement (getAnnotationValue (configuration, "provider"));
 		List <TypeElement> services = new ArrayList <> ();
@@ -172,7 +173,7 @@ public class ProviderProcessor extends
 
 		try {
 			FileObject fileObject = processingEnv.getFiler ().createSourceFile (pkg + "." + name, element);
-			try (PrintWriter writer = getWriter (fileObject, WriteMode.OVERRIDE, false)) {
+			try (PrintWriter writer = new PrintWriter (fileObject.openOutputStream (), false)) {
 				TypeMirror initializerType = null;
 				Iterator <? extends TypeMirror> thrownTypes = null;
 				for (Element enclosedElement: providerElement.getEnclosedElements ()) {
@@ -250,6 +251,7 @@ public class ProviderProcessor extends
 				writer.println ("	}");
 				writer.println ("}");
 				writer.flush ();
+				writer.close ();
 			}
 		} catch (IOException
 					| IllegalArgumentException
