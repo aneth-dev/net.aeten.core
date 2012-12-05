@@ -49,6 +49,7 @@ public class JarExtractor {
 				if (file.exists ()) {
 					return file;
 				}
+				file.getParentFile ().mkdirs ();
 				fos = new FileOutputStream (file);
 				int count;
 				byte[] buf = new byte[1024];
