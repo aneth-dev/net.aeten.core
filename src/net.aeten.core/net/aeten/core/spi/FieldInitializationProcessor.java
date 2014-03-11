@@ -45,8 +45,7 @@ public class FieldInitializationProcessor extends
 	}
 
 	@Override
-	public boolean process (Set <? extends TypeElement> annotations,
-									RoundEnvironment roundEnv) {
+	public boolean process (Set <? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		for (Element initializer: roundEnv.getElementsAnnotatedWith (SpiInitializer.class)) {
 			Element enclosingClass = getEnclosingClass (initializer);
 			String pkg = processingEnv.getElementUtils ().getPackageOf (enclosingClass).getQualifiedName ().toString ();
@@ -205,8 +204,7 @@ public class FieldInitializationProcessor extends
 		return result;
 	}
 
-	private String join (List <String> words,
-								char separator) {
+	private String join (List <String> words, char separator) {
 		String string = "";
 		Iterator <String> iterator = words.iterator ();
 		while (iterator.hasNext ()) {
@@ -231,8 +229,7 @@ public class FieldInitializationProcessor extends
 		return processingEnv.getTypeUtils ().asElement (superType);
 	}
 
-	static List <Element> getElementsAnnotatedWith (Element classElement,
-																	Class <? extends Annotation> annotation) {
+	static List <Element> getElementsAnnotatedWith (Element classElement, Class <? extends Annotation> annotation) {
 		List <Element> elements = new ArrayList <> ();
 		for (; classElement.getKind () != ElementKind.PACKAGE; classElement = classElement.getEnclosingElement ()) {
 			for (Element element: classElement.getEnclosedElements ()) {
