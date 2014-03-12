@@ -31,7 +31,7 @@ import javax.tools.StandardLocation;
 @Provider(Processor.class)
 @SupportedAnnotationTypes({ "net.aeten.core.spi.Provider", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration"})
 @SupportedSourceVersion(RELEASE_7)
-public class AnnotatedProviderProcessor extends AbstractProcessor {
+public class ProviderProcessor extends AbstractProcessor {
 
 	private static final Map<String, FileObject> servicesFileObjects = Collections.synchronizedMap(new HashMap<String, FileObject>());
 
@@ -124,7 +124,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 						writer.write(copy.toString());
 						if (!alreadyRegistered) {
 							writer.println(providerClassName);
-							note(AnnotatedProviderProcessor.class.getSimpleName() + " add provider " + providerClassName + " for service " + service);
+							note(ProviderProcessor.class.getSimpleName() + " add provider " + providerClassName + " for service " + service);
 						}
 					}
 				} catch (IOException | IllegalArgumentException exception) {
@@ -141,7 +141,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 		String name = getClassName(nameAnnotationValue);
 		String pkg = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
 		
-		note(AnnotatedProviderProcessor.class.getName() + " creates " + pkg + "." + name);
+		note(ProviderProcessor.class.getName() + " creates " + pkg + "." + name);
 		
 		TypeElement providerElement = toElement(getAnnotationValue(configuration, "provider"));
 		List<TypeElement> services = new ArrayList<>();
@@ -206,7 +206,7 @@ public class AnnotatedProviderProcessor extends AbstractProcessor {
 				}
  				writeImport(writer, toImport, Generated.class, Provider.class, SpiConfiguration.class);
 				writer.println();
-				writer.println("@Generated(\"" + AnnotatedProviderProcessor.class.getName() + "\")");
+				writer.println("@Generated(\"" + ProviderProcessor.class.getName() + "\")");
 				writer.print("@" + Provider.class.getSimpleName() + ((services.size() > 1) ? "({" : "("));
 
 				for (Iterator<TypeElement> iterator = services.iterator(); iterator.hasNext();) {

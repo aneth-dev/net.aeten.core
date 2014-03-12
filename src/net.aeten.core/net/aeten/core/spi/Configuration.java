@@ -11,10 +11,15 @@ import java.lang.annotation.Target;
  * @author Thomas Pérennou
  */
 @Documented
-@Retention(RetentionPolicy.SOURCE)
-@Target({ElementType.PACKAGE, ElementType.TYPE})
+@Retention (RetentionPolicy.SOURCE)
+@Target ({
+		ElementType.PACKAGE,
+		ElementType.TYPE
+})
 public @interface Configuration {
-	String name();
-	Class<?> provider();
-	String parser() default "";
+	String name ();
+
+	Class <?> provider ();
+
+	String parser () default "";
 }

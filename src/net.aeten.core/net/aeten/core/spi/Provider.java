@@ -8,8 +8,8 @@ import java.lang.annotation.RetentionPolicy;
  *
  * @author Thomas Pérennou
  */
-@Retention(RetentionPolicy.RUNTIME)
+@Retention (RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Provider {
-	Class<?>[] value();
+	Class <?>[] value ();
 }

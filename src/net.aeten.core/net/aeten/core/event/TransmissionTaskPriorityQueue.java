@@ -9,115 +9,118 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TransmissionTaskPriorityQueue extends AbstractQueue<Runnable> implements BlockingQueue<Runnable> {
+public class TransmissionTaskPriorityQueue extends
+		AbstractQueue <Runnable> implements
+		BlockingQueue <Runnable> {
 
-	private final BlockingQueue<TransmissionTask<?>>[] queues;
-	private final ReentrantLock lock = new ReentrantLock();
-	private final Condition notEmpty = lock.newCondition();
+	private final BlockingQueue <TransmissionTask <?>>[] queues;
+	private final ReentrantLock lock = new ReentrantLock ();
+	private final Condition notEmpty = lock.newCondition ();
 	private final Object[] priorityArray;
 	private boolean empty = true;
 
-	public TransmissionTaskPriorityQueue() {
-		this(Priority.values());
+	public TransmissionTaskPriorityQueue () {
+		this (Priority.values ());
 	}
 
-	@SuppressWarnings("unchecked")
-	public <P> TransmissionTaskPriorityQueue(P[] priorityArray) {
-		this.priorityArray = priorityArray.clone();
+	@SuppressWarnings ("unchecked")
+	public <P> TransmissionTaskPriorityQueue (P[] priorityArray) {
+		this.priorityArray = priorityArray.clone ();
 		queues = new LinkedBlockingQueue[priorityArray.length];
 		for (int i = 0; i < this.priorityArray.length; i++) {
-			queues[i] = new LinkedBlockingQueue<TransmissionTask<?>>();
+			queues[i] = new LinkedBlockingQueue <TransmissionTask <?>> ();
 		}
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings ("unchecked")
 	@Override
-	public Iterator<Runnable> iterator() {
+	public Iterator <Runnable> iterator () {
 
-		return new Iterator<Runnable>() {
-			private final Iterator<TransmissionTask<?>>[] iterators;
+		return new Iterator <Runnable> () {
+			private final Iterator <TransmissionTask <?>>[] iterators;
 			private int iterator = 0;
 			{
 				iterators = new Iterator[priorityArray.length];
-				for (Priority priority : Priority.values()) {
-					iterators[priority.ordinal()] = queues[priority.ordinal()].iterator();
+				for (Priority priority: Priority.values ()) {
+					iterators[priority.ordinal ()] = queues[priority.ordinal ()].iterator ();
 				}
 			}
 
 			@Override
-			public boolean hasNext() {
-				return hasNext(0);
+			public boolean hasNext () {
+				return hasNext (0);
 			}
 
-			private boolean hasNext(int index) {
+			private boolean hasNext (int index) {
 				iterator = index;
-				if (iterators[iterator].hasNext()) {
+				if (iterators[iterator].hasNext ()) {
 					return true;
 				}
 				if (++iterator == iterators.length) {
 					return false;
 				}
-				return hasNext(iterator);
+				return hasNext (iterator);
 			}
 
 			@Override
-			public TransmissionTask<?> next() {
-				return iterators[iterator].next();
+			public TransmissionTask <?> next () {
+				return iterators[iterator].next ();
 			}
 
 			@Override
-			public void remove() {
-				iterators[iterator].remove();
+			public void remove () {
+				iterators[iterator].remove ();
 			}
 
 		};
 	}
 
 	@Override
-	public int size() {
+	public int size () {
 		int size = 0;
 		for (int i = 0; i < priorityArray.length; i++) {
-			size += queues[i].size();
+			size += queues[i].size ();
 		}
 		return size;
 	}
 
 	@Override
-	public int drainTo(Collection<? super Runnable> collection) {
+	public int drainTo (Collection <? super Runnable> collection) {
 		int count = 0;
-		for (Runnable task : this) {
+		for (Runnable task: this) {
 			// TODO remove element
-			collection.add(task);
+			collection.add (task);
 			count++;
 		}
 		return count;
 	}
 
 	@Override
-	public int drainTo(Collection<? super Runnable> collection, int maxElements) {
+	public int drainTo (	Collection <? super Runnable> collection,
+								int maxElements) {
 		int count = 0;
-		for (Runnable task : this) {
+		for (Runnable task: this) {
 			if ((count + 1) == maxElements) {
 				return count;
 			}
 			// TODO remove element
-			collection.add(task);
+			collection.add (task);
 			count++;
 		}
 		return count;
 	}
 
 	@Override
-	public boolean offer(Runnable task) {
+	public boolean offer (Runnable task) {
 		if (task instanceof TransmissionTask) {
-			TransmissionTask<?> transmissionTask = (TransmissionTask<?>) task;
-			boolean added = queues[transmissionTask.priority].offer(transmissionTask);
-			lock.lock();
+			TransmissionTask <?> transmissionTask = (TransmissionTask <?>) task;
+			boolean added = queues[transmissionTask.priority].offer (transmissionTask);
+			lock.lock ();
 			try {
 				empty = false;
-				notEmpty.signal();
+				notEmpty.signal ();
 			} finally {
-				lock.unlock();
+				lock.unlock ();
 			}
 			return added;
 		}
@@ -125,17 +128,19 @@ public class TransmissionTaskPriorityQueue extends AbstractQueue<Runnable> imple
 	}
 
 	@Override
-	public boolean offer(Runnable task, long timeout, TimeUnit unit) throws InterruptedException {
+	public boolean offer (	Runnable task,
+									long timeout,
+									TimeUnit unit) throws InterruptedException {
 		if (task instanceof TransmissionTask) {
-			TransmissionTask<?> transmissionTask = (TransmissionTask<?>) task;
-			boolean added = queues[transmissionTask.priority].offer(transmissionTask, timeout, unit);
-			lock.lock();
+			TransmissionTask <?> transmissionTask = (TransmissionTask <?>) task;
+			boolean added = queues[transmissionTask.priority].offer (transmissionTask, timeout, unit);
+			lock.lock ();
 			try {
 				if (empty) {
-					notEmpty.signal();
+					notEmpty.signal ();
 				}
 			} finally {
-				lock.unlock();
+				lock.unlock ();
 			}
 			return added;
 		}
@@ -143,18 +148,19 @@ public class TransmissionTaskPriorityQueue extends AbstractQueue<Runnable> imple
 	}
 
 	@Override
-	public Runnable poll(long timeout, TimeUnit unit) throws InterruptedException {
-		lock.lockInterruptibly();
+	public Runnable poll (	long timeout,
+									TimeUnit unit) throws InterruptedException {
+		lock.lockInterruptibly ();
 		try {
 			if (empty) {
-				notEmpty.await(timeout, unit);
+				notEmpty.await (timeout, unit);
 			}
 		} finally {
-			lock.unlock();
+			lock.unlock ();
 		}
 		Runnable task = null;
 		for (int i = 0; i < priorityArray.length; i++) {
-			task = queues[i].poll();
+			task = queues[i].poll ();
 			if (task != null) {
 				break;
 			}
@@ -163,43 +169,43 @@ public class TransmissionTaskPriorityQueue extends AbstractQueue<Runnable> imple
 	}
 
 	@Override
-	public void put(Runnable task) throws InterruptedException {
+	public void put (Runnable task) throws InterruptedException {
 		if (task instanceof TransmissionTask) {
-			TransmissionTask<?> transmissionTask = (TransmissionTask<?>) task;
-			queues[transmissionTask.priority].put(transmissionTask);
-			lock.lock();
+			TransmissionTask <?> transmissionTask = (TransmissionTask <?>) task;
+			queues[transmissionTask.priority].put (transmissionTask);
+			lock.lock ();
 			try {
 				empty = false;
-				notEmpty.signal();
+				notEmpty.signal ();
 			} finally {
-				lock.unlock();
+				lock.unlock ();
 			}
 		}
-		throw new IllegalArgumentException("Element must be instanceof " + TransmissionTask.class.getName());
+		throw new IllegalArgumentException ("Element must be instanceof " + TransmissionTask.class.getName ());
 	}
 
 	@Override
-	public int remainingCapacity() {
+	public int remainingCapacity () {
 		int remainingCapacity = 0;
 		for (int i = 0; i < priorityArray.length; i++) {
-			remainingCapacity += queues[i].remainingCapacity();
+			remainingCapacity += queues[i].remainingCapacity ();
 		}
 		return remainingCapacity;
 	}
 
 	@Override
-	public Runnable take() throws InterruptedException {
-		lock.lockInterruptibly();
+	public Runnable take () throws InterruptedException {
+		lock.lockInterruptibly ();
 		try {
 			if (empty) {
-				notEmpty.await();
+				notEmpty.await ();
 			}
 		} finally {
-			lock.unlock();
+			lock.unlock ();
 		}
 		Runnable task = null;
 		for (int i = 0; i < priorityArray.length; i++) {
-			task = queues[i].poll();
+			task = queues[i].poll ();
 			if (task != null) {
 				break;
 			}
@@ -208,10 +214,10 @@ public class TransmissionTaskPriorityQueue extends AbstractQueue<Runnable> imple
 	}
 
 	@Override
-	public Runnable peek() {
+	public Runnable peek () {
 		Runnable task = null;
 		for (int i = 0; i < priorityArray.length; i++) {
-			task = queues[i].peek();
+			task = queues[i].peek ();
 			if (task != null) {
 				break;
 			}
@@ -220,10 +226,10 @@ public class TransmissionTaskPriorityQueue extends AbstractQueue<Runnable> imple
 	}
 
 	@Override
-	public Runnable poll() {
+	public Runnable poll () {
 		Runnable task = null;
 		for (int i = 0; i < priorityArray.length; i++) {
-			task = queues[i].poll();
+			task = queues[i].poll ();
 			if (task != null) {
 				break;
 			}

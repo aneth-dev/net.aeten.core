@@ -1,6 +1,5 @@
 package net.aeten.core;
 
-
 import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -13,5 +12,5 @@ import java.lang.annotation.RetentionPolicy;
 @Retention (RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Format {
-    String value();
+	String value ();
 }

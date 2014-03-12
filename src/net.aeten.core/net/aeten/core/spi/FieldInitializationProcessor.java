@@ -44,12 +44,23 @@ public class FieldInitializationProcessor extends
 		debug = true;
 	}
 
+	@SuppressWarnings ("unchecked")
 	@Override
-	public boolean process (Set <? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+	public boolean process (Set <? extends TypeElement> annotations,
+									RoundEnvironment roundEnv) {
 		for (Element initializer: roundEnv.getElementsAnnotatedWith (SpiInitializer.class)) {
 			Element enclosingClass = getEnclosingClass (initializer);
-			String pkg = processingEnv.getElementUtils ().getPackageOf (enclosingClass).getQualifiedName ().toString ();
+			AnnotationValue generate = getAnnotationValue (getAnnotationMirror (initializer, SpiInitializer.class), "generate");
 			String clazz = initializer.asType ().toString ();
+			if (!((Boolean) generate.getValue ())) {
+				debug(FieldInitializationProcessor.class.getSimpleName () + " pass " + clazz);
+				continue;
+			}
+			String pkg = processingEnv.getElementUtils ().getPackageOf (enclosingClass).getQualifiedName ().toString ();
+			/* Tweak: when Class is already generated, clazz is {package.name}.{ClassName} */
+			if (!pkg.isEmpty () && clazz.startsWith (pkg)) {
+				continue;
+			}
 
 			debug (FieldInitializationProcessor.class.getSimpleName () + " process " + clazz);
 			try (PrintWriter writer = getWriter (processingEnv.getFiler ().createSourceFile (clazz.startsWith (pkg)? clazz: pkg + "." + clazz, initializer), AbstractProcessor.WriteMode.OVERRIDE, false)) {
@@ -171,7 +182,7 @@ public class FieldInitializationProcessor extends
 						writer.println ("		return (" + typeName + ") fieldsFactories.get(\"" + fildName + "\").create(null);");
 						writer.println ("	}");
 						AnnotationValue isRequiredValue = getAnnotationValue (fieldInit, FieldInit.class, "required");
-						if ( (isRequiredValue != null) && ((Boolean) isRequiredValue.getValue () == false)) {
+						if ((isRequiredValue != null) && ((Boolean) isRequiredValue.getValue () == false)) {
 							writer.println ("	public boolean has" + upperFirstChar (fildName) + "() {");
 							writer.println ("		return fieldsFactories.containsKey(\"" + fildName + "\");");
 							writer.println ("	}");
@@ -204,7 +215,8 @@ public class FieldInitializationProcessor extends
 		return result;
 	}
 
-	private String join (List <String> words, char separator) {
+	private String join (List <String> words,
+								char separator) {
 		String string = "";
 		Iterator <String> iterator = words.iterator ();
 		while (iterator.hasNext ()) {
@@ -229,7 +241,8 @@ public class FieldInitializationProcessor extends
 		return processingEnv.getTypeUtils ().asElement (superType);
 	}
 
-	static List <Element> getElementsAnnotatedWith (Element classElement, Class <? extends Annotation> annotation) {
+	static List <Element> getElementsAnnotatedWith (Element classElement,
+																	Class <? extends Annotation> annotation) {
 		List <Element> elements = new ArrayList <> ();
 		for (; classElement.getKind () != ElementKind.PACKAGE; classElement = classElement.getEnclosingElement ()) {
 			for (Element element: classElement.getEnclosedElements ()) {

@@ -15,13 +15,15 @@ public interface ServiceLoader {
 	 * @param service
 	 *            the provided service
 	 */
-	public <S> void reload(Class<S> service);
+	public <S> void reload (Class <S> service);
 
 	/**
 	 * @return The registered providers for a given service.
 	 * @param service
 	 *            the provided service
 	 */
-	public <S> Iterable<S> getProviders(Class<S> service, ClassLoader classLoader, Predicate<Class<S>> predicate);
+	public <S> Iterable <S> getProviders (	Class <S> service,
+														ClassLoader classLoader,
+														Predicate <Class <S>> predicate);
 
 }

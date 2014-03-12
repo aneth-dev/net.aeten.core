@@ -8,6 +8,8 @@ import net.aeten.core.Identifiable;
  *
  * @author Thomas Pérennou
  */
-public interface MarkupConverter<T> extends Identifiable {
-	public T convert(Reader reader, Parser<MarkupNode> parser);
+public interface MarkupConverter<T> extends
+		Identifiable {
+	public T convert (Reader reader,
+							Parser <MarkupNode> parser);
 }

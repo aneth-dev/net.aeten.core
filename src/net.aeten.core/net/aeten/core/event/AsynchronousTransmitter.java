@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Pérennou
  */
 @ThreadSafe
-public class AsynchronousTransmitter <Event, Data extends EventData <?, Event>> implements
+public class AsynchronousTransmitter<Event, Data extends EventData <?, Event>> implements
 		TransmitterService <Event, Data> {
 
 	private final static Logger LOGGER = LoggerFactory.getLogger (AsynchronousTransmitter.class);
@@ -130,7 +130,7 @@ public class AsynchronousTransmitter <Event, Data extends EventData <?, Event>> 
 		List <Data> datas = new ArrayList <> (tasks.size ());
 		for (Runnable task: tasks) {
 			if (task instanceof TransmissionTask) {
-				datas.add ( ((TransmissionTask <Data>) task).data);
+				datas.add (((TransmissionTask <Data>) task).data);
 			}
 		}
 		return datas;
