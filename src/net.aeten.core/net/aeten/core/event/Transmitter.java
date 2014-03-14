@@ -6,6 +6,6 @@ import java.util.concurrent.Future;
  *
  * @author Thomas Pérennou
  */
-public interface Transmitter<Data extends EventData <?, ?>> {
-	public Future <Data> transmit (Data data);
+public interface Transmitter<Data extends EventData<?, ?>> {
+	public Future<Data> transmit(Data data);
 }

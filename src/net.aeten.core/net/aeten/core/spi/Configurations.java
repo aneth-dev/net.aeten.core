@@ -11,11 +11,10 @@ import java.lang.annotation.Target;
  * @author Thomas Pérennou
  */
 @Documented
-@Retention (RetentionPolicy.SOURCE)
-@Target ({
-		ElementType.PACKAGE,
-		ElementType.TYPE
+@Retention(RetentionPolicy.SOURCE)
+@Target({ ElementType.PACKAGE,
+			ElementType.TYPE
 })
 public @interface Configurations {
-	Configuration[] value ();
+	Configuration[] value();
 }

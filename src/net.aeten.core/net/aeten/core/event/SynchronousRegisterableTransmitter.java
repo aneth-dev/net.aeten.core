@@ -18,69 +18,63 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Pérennou
  */
 @ThreadSafe
-class SynchronousRegisterableTransmitter<Event, Data extends EventData <?, Event>> implements
-		RegisterableTransmitter <Event, Data> {
+class SynchronousRegisterableTransmitter<Event, Data extends EventData<?, Event>> implements RegisterableTransmitter<Event, Data> {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger (SynchronousRegisterableTransmitter.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(SynchronousRegisterableTransmitter.class);
 
-	private final Map <Event, List <Handler <Data>>> eventHandlerMap;
-	private final List <Handler <Data>> allEventsHandlerList;
+	private final Map<Event, List<Handler<Data>>> eventHandlerMap;
+	private final List<Handler<Data>> allEventsHandlerList;
 
-	public SynchronousRegisterableTransmitter (Event[] events) {
-		Factory <List <Handler <Data>>, Object> handlerListFactory = new Factory <List <Handler <Data>>, Object> () {
+	public SynchronousRegisterableTransmitter(Event[] events) {
+		Factory<List<Handler<Data>>, Object> handlerListFactory = new Factory<List<Handler<Data>>, Object>() {
 			@Override
-			public List <Handler <Data>> create (Object event) {
-				return new CopyOnWriteArrayList <Handler <Data>> ();
+			public List<Handler<Data>> create(Object event) {
+				return new CopyOnWriteArrayList<Handler<Data>>();
 			}
 		};
-		eventHandlerMap = Concurrents.concurrentFilledMap (AtomicComparator.REFESENCE, events, handlerListFactory);
-		allEventsHandlerList = handlerListFactory.create (null);
+		eventHandlerMap = Concurrents.concurrentFilledMap(AtomicComparator.REFESENCE, events, handlerListFactory);
+		allEventsHandlerList = handlerListFactory.create(null);
 	}
 
 	@Override
-	public void addEventHandler (	Handler <Data> eventHandler,
-											Event... eventList) {
+	public void addEventHandler(Handler<Data> eventHandler, Event... eventList) {
 		if (eventList.length == 0) {
-			allEventsHandlerList.add (eventHandler);
+			allEventsHandlerList.add(eventHandler);
 		} else {
 			for (Event event: eventList) {
-				eventHandlerMap.get (event).add (eventHandler);
+				eventHandlerMap.get(event).add(eventHandler);
 			}
 		}
 	}
 
 	@Override
-	public void removeEventHandler (	Handler <Data> eventHandler,
-												Event... eventList) {
+	public void removeEventHandler(Handler<Data> eventHandler, Event... eventList) {
 		if (eventList.length == 0) {
-			allEventsHandlerList.remove (eventHandler);
+			allEventsHandlerList.remove(eventHandler);
 			return;
 		}
 		for (Event event: eventList) {
-			final List <Handler <Data>> handlers = eventHandlerMap.get (event);
+			final List<Handler<Data>> handlers = eventHandlerMap.get(event);
 			if (handlers != null) {
-				handlers.remove (eventHandler);
+				handlers.remove(eventHandler);
 			}
 		}
 	}
 
 	@Override
-	public Future <Data> transmit (Data data) {
-		fireEvent (allEventsHandlerList, data);
-		fireEvent (eventHandlerMap.get (data.getEvent ()), data);
-		return new FutureDone <Data> (data);
+	public Future<Data> transmit(Data data) {
+		fireEvent(allEventsHandlerList, data);
+		fireEvent(eventHandlerMap.get(data.getEvent()), data);
+		return new FutureDone<Data>(data);
 	}
 
-	private void fireEvent (Iterable <Handler <Data>> handlers,
-									Data data) {
-		if (handlers == null) {
-			return;
-		}
-		for (Handler <Data> eventHandler: handlers) {
+	private void fireEvent(Iterable<Handler<Data>> handlers, Data data) {
+		if (handlers == null) { return; }
+		for (Handler<Data> eventHandler: handlers) {
 			try {
-				eventHandler.handleEvent (data);
+				eventHandler.handleEvent(data);
 			} catch (Throwable error) {
-				LOGGER.error ("An handler has thrown an error", error);
+				LOGGER.error("An handler has thrown an error", error);
 			}
 		}
 	}

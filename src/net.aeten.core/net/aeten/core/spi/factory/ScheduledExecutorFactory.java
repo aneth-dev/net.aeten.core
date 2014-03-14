@@ -11,41 +11,39 @@ import net.aeten.core.spi.SpiConfiguration;
 import net.aeten.core.spi.SpiFactory;
 import net.aeten.core.spi.SpiInitializer;
 
-@Provider (SpiFactory.class)
-public class ScheduledExecutorFactory implements
-		SpiFactory <ScheduledExecutorService, Document.Element> {
+@Provider(SpiFactory.class)
+public class ScheduledExecutorFactory implements SpiFactory<ScheduledExecutorService, Document.Element> {
 
-	@SuppressWarnings ("unused")
+	@SuppressWarnings("unused")
 	private static class Init {
 		@FieldInit
 		private final int corePoolSize;
-		@FieldInit (required = false)
+		@FieldInit(required = false)
 		private final ThreadFactory threadFactory;
 
 		/* TODO */
 		//	RejectedExecutionHandler handler
 
-		Init (@SpiInitializer (generate = false) ScheduledExecutorFactoryInit init) {
-			corePoolSize = init.getCorePoolSize ();
-			threadFactory = init.hasThreadFactory ()? init.getThreadFactory (): null;
+		Init(@SpiInitializer(generate = false) ScheduledExecutorFactoryInit init) {
+			corePoolSize = init.getCorePoolSize();
+			threadFactory = init.hasThreadFactory()? init.getThreadFactory(): null;
 		}
 	}
 
 	@Override
-	public Class <?>[] getTypes () {
-		return new Class[] {
-			ScheduledExecutorService.class
+	public Class<?>[] getTypes() {
+		return new Class[] { ScheduledExecutorService.class
 		};
 	}
 
 	@Override
-	public Class <Document.Element> getParameterType () {
+	public Class<Document.Element> getParameterType() {
 		return Document.Element.class;
 	}
 
 	@Override
-	public ScheduledExecutorService create (Document.Element configuration) {
-		ScheduledExecutorFactoryInit init = new ScheduledExecutorFactoryInit (new SpiConfiguration (configuration));
-		return Executors.newScheduledThreadPool (init.getCorePoolSize (), init.getThreadFactory ());
+	public ScheduledExecutorService create(Document.Element configuration) {
+		ScheduledExecutorFactoryInit init = new ScheduledExecutorFactoryInit(new SpiConfiguration(configuration));
+		return Executors.newScheduledThreadPool(init.getCorePoolSize(), init.getThreadFactory());
 	}
 }

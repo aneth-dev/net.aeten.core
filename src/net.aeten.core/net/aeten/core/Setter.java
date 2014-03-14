@@ -5,7 +5,7 @@ public interface Setter<T> {
 	 * Sets to the given value.
 	 * 
 	 * @param newValue
-	 *            the new value
+	 *           the new value
 	 */
-	void set (T newValue);
+	void set(T newValue);
 }

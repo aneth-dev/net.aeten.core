@@ -12,18 +12,18 @@ import net.aeten.core.parsing.Document;
 import net.aeten.core.spi.FieldInitFactory;
 import net.aeten.core.spi.SpiConfiguration;
 
-@Generated ("net.aeten.core.spi.FieldInitializationProcessor")
+@Generated("net.aeten.core.spi.FieldInitializationProcessor")
 public class UdpIpSocketFactoryInitializer {
-	private final Map <String, Factory <Object, Void>> fieldsFactories;
+	private final Map<String, Factory<Object, Void>> fieldsFactories;
 
-	public UdpIpSocketFactoryInitializer (SpiConfiguration configuration) {
-		fieldsFactories = new HashMap <> ();
-		for (Document.Element element: configuration.root.asSequence ()) {
+	public UdpIpSocketFactoryInitializer(SpiConfiguration configuration) {
+		fieldsFactories = new HashMap<>();
+		for (Document.Element element: configuration.root.asSequence()) {
 			final String field;
-			final Class <?> type;
-			final List <Class <?>> parameterizedTypes = new ArrayList <> ();
-			final Document.MappingEntry entry = element.asMappingEntry ();
-			switch (entry.getKey ().asString ()) {
+			final Class<?> type;
+			final List<Class<?>> parameterizedTypes = new ArrayList<>();
+			final Document.MappingEntry entry = element.asMappingEntry();
+			switch (entry.getKey().asString()) {
 			case "bind":
 				field = "bind";
 				type = boolean.class;
@@ -80,65 +80,65 @@ public class UdpIpSocketFactoryInitializer {
 				type = java.lang.String.class;
 				break;
 			default:
-				throw new IllegalArgumentException (String.format ("No field named %s", entry.getKey ()));
+				throw new IllegalArgumentException(String.format("No field named %s", entry.getKey()));
 			}
-			fieldsFactories.put (field, FieldInitFactory.create (entry.getValue (), type, parameterizedTypes, UdpIpSocketFactoryInitializer.class.getClassLoader ()));
+			fieldsFactories.put(field, FieldInitFactory.create(entry.getValue(), type, parameterizedTypes, UdpIpSocketFactoryInitializer.class.getClassLoader()));
 		}
 	}
 
-	public boolean getBind () {
-		return (boolean) fieldsFactories.get ("bind").create (null);
+	public boolean getBind() {
+		return (boolean) fieldsFactories.get("bind").create(null);
 	}
 
-	public boolean hasBind () {
-		return fieldsFactories.containsKey ("bind");
+	public boolean hasBind() {
+		return fieldsFactories.containsKey("bind");
 	}
 
-	public java.net.InetSocketAddress getDestinationInetSocketAddress () {
-		return (java.net.InetSocketAddress) fieldsFactories.get ("destinationInetSocketAddress").create (null);
+	public java.net.InetSocketAddress getDestinationInetSocketAddress() {
+		return (java.net.InetSocketAddress) fieldsFactories.get("destinationInetSocketAddress").create(null);
 	}
 
-	public int getMaxPacketSize () {
-		return (int) fieldsFactories.get ("maxPacketSize").create (null);
+	public int getMaxPacketSize() {
+		return (int) fieldsFactories.get("maxPacketSize").create(null);
 	}
 
-	public boolean getReuse () {
-		return (boolean) fieldsFactories.get ("reuse").create (null);
+	public boolean getReuse() {
+		return (boolean) fieldsFactories.get("reuse").create(null);
 	}
 
-	public boolean hasReuse () {
-		return fieldsFactories.containsKey ("reuse");
+	public boolean hasReuse() {
+		return fieldsFactories.containsKey("reuse");
 	}
 
-	public java.net.InetAddress getSourceInetAddress () {
-		return (java.net.InetAddress) fieldsFactories.get ("sourceInetAddress").create (null);
+	public java.net.InetAddress getSourceInetAddress() {
+		return (java.net.InetAddress) fieldsFactories.get("sourceInetAddress").create(null);
 	}
 
-	public boolean hasSourceInetAddress () {
-		return fieldsFactories.containsKey ("sourceInetAddress");
+	public boolean hasSourceInetAddress() {
+		return fieldsFactories.containsKey("sourceInetAddress");
 	}
 
-	public java.lang.Integer getTimeToLive () {
-		return (java.lang.Integer) fieldsFactories.get ("timeToLive").create (null);
+	public java.lang.Integer getTimeToLive() {
+		return (java.lang.Integer) fieldsFactories.get("timeToLive").create(null);
 	}
 
-	public boolean hasTimeToLive () {
-		return fieldsFactories.containsKey ("timeToLive");
+	public boolean hasTimeToLive() {
+		return fieldsFactories.containsKey("timeToLive");
 	}
 
-	public java.lang.Integer getTimeout () {
-		return (java.lang.Integer) fieldsFactories.get ("timeout").create (null);
+	public java.lang.Integer getTimeout() {
+		return (java.lang.Integer) fieldsFactories.get("timeout").create(null);
 	}
 
-	public boolean hasTimeout () {
-		return fieldsFactories.containsKey ("timeout");
+	public boolean hasTimeout() {
+		return fieldsFactories.containsKey("timeout");
 	}
 
-	public java.lang.String getTrafficClass () {
-		return (java.lang.String) fieldsFactories.get ("trafficClass").create (null);
+	public java.lang.String getTrafficClass() {
+		return (java.lang.String) fieldsFactories.get("trafficClass").create(null);
 	}
 
-	public boolean hasTrafficClass () {
-		return fieldsFactories.containsKey ("trafficClass");
+	public boolean hasTrafficClass() {
+		return fieldsFactories.containsKey("trafficClass");
 	}
 }

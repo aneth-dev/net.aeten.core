@@ -1,17 +1,17 @@
 package net.aeten.core.playrec;
 
 public interface Recorder<T extends Record> {
-	void start ();
+	void start();
 
-	void stop ();
+	void stop();
 
-	void pause ();
+	void pause();
 
-	void resume ();
+	void resume();
 
-	T getRecord ();
+	T getRecord();
 
-	void addListener (RecorderListener <T> listener);
+	void addListener(RecorderListener<T> listener);
 
-	void removeListener (RecorderListener <?> listener);
+	void removeListener(RecorderListener<?> listener);
 }

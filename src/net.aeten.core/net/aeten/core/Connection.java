@@ -7,10 +7,10 @@ package net.aeten.core;
 import java.io.IOException;
 
 public interface Connection {
-	public void connect () throws IOException;
+	public void connect() throws IOException;
 
-	public void disconnect () throws IOException;
+	public void disconnect() throws IOException;
 
-	public boolean isConnected ();
+	public boolean isConnected();
 
 }

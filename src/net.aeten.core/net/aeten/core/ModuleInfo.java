@@ -7,12 +7,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Documented
-@Retention (RetentionPolicy.RUNTIME)
-@Target (ElementType.PACKAGE)
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.PACKAGE)
 public @interface ModuleInfo {
-	String name ();
+	String name();
 
-	String version ();
+	String version();
 
-	String copyright ();
+	String copyright();
 }

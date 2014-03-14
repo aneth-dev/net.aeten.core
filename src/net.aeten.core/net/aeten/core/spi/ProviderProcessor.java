@@ -29,7 +29,10 @@ import javax.tools.StandardLocation;
  * @author Thomas Pérennou
  */
 @Provider(Processor.class)
-@SupportedAnnotationTypes({ "net.aeten.core.spi.Provider", "net.aeten.core.spi.Configurations", "net.aeten.core.spi.Configuration"})
+@SupportedAnnotationTypes({ "net.aeten.core.spi.Provider",
+									"net.aeten.core.spi.Configurations",
+									"net.aeten.core.spi.Configuration"
+})
 @SupportedSourceVersion(RELEASE_7)
 public class ProviderProcessor extends AbstractProcessor {
 
@@ -45,27 +48,27 @@ public class ProviderProcessor extends AbstractProcessor {
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		List<Element> initializers = new ArrayList<>();
-		for (Element element : roundEnv.getElementsAnnotatedWith(SpiInitializer.class)) {
+		for (Element element: roundEnv.getElementsAnnotatedWith(SpiInitializer.class)) {
 			initializers.add(element);
 		}
 
-		for (Element element : roundEnv.getElementsAnnotatedWith(Configurations.class)) {
-			for (AnnotationMirror configurations : getAnnotationMirrors(element, Configurations.class)) {
-				for (AnnotationValue v : (Iterable<AnnotationValue>) getAnnotationValue(configurations).getValue()) {
+		for (Element element: roundEnv.getElementsAnnotatedWith(Configurations.class)) {
+			for (AnnotationMirror configurations: getAnnotationMirrors(element, Configurations.class)) {
+				for (AnnotationValue v: (Iterable<AnnotationValue>) getAnnotationValue(configurations).getValue()) {
 					this.configure(element, (AnnotationMirror) v.getValue(), initializers);
 				}
 			}
 		}
 
-		for (Element element : roundEnv.getElementsAnnotatedWith(Configuration.class)) {
-			for (AnnotationMirror configuration : getAnnotationMirrors(element, Configuration.class)) {
+		for (Element element: roundEnv.getElementsAnnotatedWith(Configuration.class)) {
+			for (AnnotationMirror configuration: getAnnotationMirrors(element, Configuration.class)) {
 				this.configure(element, configuration, initializers);
 			}
 		}
 
-		for (Element provider : roundEnv.getElementsAnnotatedWith(Provider.class)) {
+		for (Element provider: roundEnv.getElementsAnnotatedWith(Provider.class)) {
 			Element initializer = null;
-			for (Element element : initializers) {
+			for (Element element: initializers) {
 				if (element.getEnclosingElement().getEnclosingElement().equals(provider)) {
 					initializer = element;
 				}
@@ -81,8 +84,8 @@ public class ProviderProcessor extends AbstractProcessor {
 	private void registerProvider(Element provider) {
 		String providerClassName = getProperQualifiedName((TypeElement) provider);
 
-		for (AnnotationMirror annotation : getAnnotationMirrors(provider, Provider.class)) {
-			for (AnnotationValue value : findValue(annotation)) {
+		for (AnnotationMirror annotation: getAnnotationMirrors(provider, Provider.class)) {
+			for (AnnotationValue value: findValue(annotation)) {
 				String service = value.getValue().toString();
 
 				try {
@@ -127,7 +130,8 @@ public class ProviderProcessor extends AbstractProcessor {
 							note(ProviderProcessor.class.getSimpleName() + " add provider " + providerClassName + " for service " + service);
 						}
 					}
-				} catch (IOException | IllegalArgumentException exception) {
+				} catch (IOException
+							| IllegalArgumentException exception) {
 					error("Fail to add provider " + providerClassName + " for service " + service, exception, provider);
 				}
 			}
@@ -140,26 +144,25 @@ public class ProviderProcessor extends AbstractProcessor {
 		AnnotationValue nameAnnotationValue = getAnnotationValue(configuration, "name");
 		String name = getClassName(nameAnnotationValue);
 		String pkg = processingEnv.getElementUtils().getPackageOf(element).getQualifiedName().toString();
-		
+
 		note(ProviderProcessor.class.getName() + " creates " + pkg + "." + name);
-		
+
 		TypeElement providerElement = toElement(getAnnotationValue(configuration, "provider"));
 		List<TypeElement> services = new ArrayList<>();
-		for (AnnotationMirror serviceAnnotation : getAnnotationMirrors(providerElement, Provider.class)) {
+		for (AnnotationMirror serviceAnnotation: getAnnotationMirrors(providerElement, Provider.class)) {
 			AnnotationValue annotationValue = getAnnotationValue(serviceAnnotation);
-			for (AnnotationValue value : (Iterable<AnnotationValue>) annotationValue.getValue()) {
+			for (AnnotationValue value: (Iterable<AnnotationValue>) annotationValue.getValue()) {
 				services.add(toElement(value));
 			}
 		}
 		String parser = (String) getAnnotationValue(configuration, "parser").getValue();
 
-		
 		try {
 			FileObject fileObject = processingEnv.getFiler().createSourceFile(pkg + "." + name, element);
 			try (PrintWriter writer = getWriter(fileObject, WriteMode.CREATE, false)) {
 				TypeMirror initializerType = null;
 				Iterator<? extends TypeMirror> thrownTypes = null;
-				for (Element enclosedElement : providerElement.getEnclosedElements()) {
+				for (Element enclosedElement: providerElement.getEnclosedElements()) {
 					if (enclosedElement.getKind() == ElementKind.CONSTRUCTOR) {
 						ExecutableElement constructor = (ExecutableElement) enclosedElement;
 						if (constructor.getParameters().size() == 1 && constructor.getParameters().get(0).getAnnotation(SpiInitializer.class) != null) {
@@ -180,7 +183,7 @@ public class ProviderProcessor extends AbstractProcessor {
 
 				writer.println("package " + pkg + ";");
 				writer.println();
-				
+
 				List<String> toImport = new ArrayList<>();
 				String providerPackage = getPackageOf(providerElement);
 				String providerClassName = getClassOf(providerElement);
@@ -194,7 +197,7 @@ public class ProviderProcessor extends AbstractProcessor {
 					}
 					toImport.add(providerRootImport);
 				}
- 				for (TypeElement service : services) {
+				for (TypeElement service: services) {
 					if (!getPackageOf(service).equals(pkg)) {
 						String serviceRootImport = getProperQualifiedName(service);
 						int inner = serviceRootImport.indexOf('$');
@@ -204,10 +207,10 @@ public class ProviderProcessor extends AbstractProcessor {
 						toImport.add(serviceRootImport);
 					}
 				}
- 				writeImport(writer, toImport, Generated.class, Provider.class, SpiConfiguration.class);
+				writeImport(writer, toImport, Generated.class, Provider.class, SpiConfiguration.class);
 				writer.println();
 				writer.println("@Generated(\"" + ProviderProcessor.class.getName() + "\")");
-				writer.print("@" + Provider.class.getSimpleName() + ((services.size() > 1) ? "({" : "("));
+				writer.print("@" + Provider.class.getSimpleName() + ((services.size() > 1)? "({": "("));
 
 				for (Iterator<TypeElement> iterator = services.iterator(); iterator.hasNext();) {
 					writer.print(getClassOf(iterator.next()) + ".class");
@@ -215,7 +218,7 @@ public class ProviderProcessor extends AbstractProcessor {
 						writer.write(", ");
 					}
 				}
-				writer.println(((services.size() > 1) ? "})" : ")"));
+				writer.println(((services.size() > 1)? "})": ")"));
 				writer.println("public class " + name + " extends " + providerClassName + " {");
 				writer.print("	public " + name + " ()");
 				if (thrownTypes.hasNext()) {
@@ -235,7 +238,9 @@ public class ProviderProcessor extends AbstractProcessor {
 				writer.println("}");
 				writer.flush();
 			}
-		} catch (IOException | IllegalArgumentException | Error exception) {
+		} catch (IOException
+					| IllegalArgumentException
+					| Error exception) {
 			error("Unexpected exception", exception, element);
 		}
 	}
@@ -243,7 +248,7 @@ public class ProviderProcessor extends AbstractProcessor {
 	private static String getClassName(AnnotationValue configurationFileNameAnnotationValue) {
 		String[] words = ((String) configurationFileNameAnnotationValue.getValue()).split("[-_\\.]");
 		String className = "";
-		for (int i = 0; i< words.length - 1; i++) {
+		for (int i = 0; i < words.length - 1; i++) {
 			className += upperFirstChar(words[i].toLowerCase());
 		}
 		return className;

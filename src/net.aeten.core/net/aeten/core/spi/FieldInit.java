@@ -6,10 +6,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Documented
-@Retention (RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.CLASS)
 @Inherited
 public @interface FieldInit {
-	String[] alias () default "";
+	String[] alias() default "";
 
-	boolean required () default true;
+	boolean required() default true;
 }

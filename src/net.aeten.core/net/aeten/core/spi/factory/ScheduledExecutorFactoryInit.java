@@ -12,18 +12,18 @@ import net.aeten.core.parsing.Document;
 import net.aeten.core.spi.FieldInitFactory;
 import net.aeten.core.spi.SpiConfiguration;
 
-@Generated ("net.aeten.core.spi.FieldInitializationProcessor")
+@Generated("net.aeten.core.spi.FieldInitializationProcessor")
 class ScheduledExecutorFactoryInit {
-	private final Map <String, Factory <Object, Void>> fieldsFactories;
+	private final Map<String, Factory<Object, Void>> fieldsFactories;
 
-	public ScheduledExecutorFactoryInit (SpiConfiguration configuration) {
-		fieldsFactories = new HashMap <> ();
-		for (Document.Element element: configuration.root.asSequence ()) {
+	public ScheduledExecutorFactoryInit(SpiConfiguration configuration) {
+		fieldsFactories = new HashMap<>();
+		for (Document.Element element: configuration.root.asSequence()) {
 			final String field;
-			final Class <?> type;
-			final List <Class <?>> parameterizedTypes = new ArrayList <> ();
-			final Document.MappingEntry entry = element.asMappingEntry ();
-			switch (entry.getKey ().asString ()) {
+			final Class<?> type;
+			final List<Class<?>> parameterizedTypes = new ArrayList<>();
+			final Document.MappingEntry entry = element.asMappingEntry();
+			switch (entry.getKey().asString()) {
 			case "corePoolSize":
 			case "core pool size":
 			case "core-pool-size":
@@ -39,21 +39,21 @@ class ScheduledExecutorFactoryInit {
 				type = java.util.concurrent.ThreadFactory.class;
 				break;
 			default:
-				throw new IllegalArgumentException (String.format ("No field named %s", entry.getKey ()));
+				throw new IllegalArgumentException(String.format("No field named %s", entry.getKey()));
 			}
-			fieldsFactories.put (field, FieldInitFactory.create (entry.getValue (), type, parameterizedTypes, ScheduledExecutorFactoryInit.class.getClassLoader ()));
+			fieldsFactories.put(field, FieldInitFactory.create(entry.getValue(), type, parameterizedTypes, ScheduledExecutorFactoryInit.class.getClassLoader()));
 		}
 	}
 
-	public int getCorePoolSize () {
-		return (int) fieldsFactories.get ("corePoolSize").create (null);
+	public int getCorePoolSize() {
+		return (int) fieldsFactories.get("corePoolSize").create(null);
 	}
 
-	public java.util.concurrent.ThreadFactory getThreadFactory () {
-		return (java.util.concurrent.ThreadFactory) fieldsFactories.get ("threadFactory").create (null);
+	public java.util.concurrent.ThreadFactory getThreadFactory() {
+		return (java.util.concurrent.ThreadFactory) fieldsFactories.get("threadFactory").create(null);
 	}
 
-	public boolean hasThreadFactory () {
-		return fieldsFactories.containsKey ("threadFactory");
+	public boolean hasThreadFactory() {
+		return fieldsFactories.containsKey("threadFactory");
 	}
 }
