@@ -1,6 +1,6 @@
 package net.aeten.core.spi;
 
-import net.aeten.core.Predicate;
+import java.util.function.Predicate;
 
 /**
  * Calling methods are guarded by each service mutex. Implementation must be

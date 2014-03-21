@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import net.aeten.core.Factory;
-import net.aeten.core.Predicate;
+import java.util.function.Predicate;
 import net.aeten.core.util.Concurrents;
 
 /**
@@ -241,7 +241,7 @@ final class Loader<S> implements Iterable<S> {
 			try {
 				@SuppressWarnings("unchecked")
 				Class<S> providerClass = (Class<S>) Class.forName(cn, true, loader);
-				if (predicate.evaluate(providerClass)) {
+				if (predicate.test(providerClass)) {
 					S provider = service.cast(providerClass.newInstance());
 					providers.put(cn, provider);
 					return provider;

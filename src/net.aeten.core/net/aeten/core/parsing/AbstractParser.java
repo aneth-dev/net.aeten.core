@@ -4,7 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
-import net.aeten.core.Predicate;
+import java.util.function.Predicate;
 import net.aeten.core.event.Handler;
 
 public abstract class AbstractParser<NodeType extends Enum<?>> implements Parser<NodeType> {
@@ -149,7 +149,7 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements Parser
 
 		protected static final Predicate<EntryUnderConstruction> END_OF_LINE = new Predicate<EntryUnderConstruction>() {
 			@Override
-			public boolean evaluate(EntryUnderConstruction element) {
+			public boolean test(EntryUnderConstruction element) {
 				switch (element.getLastChar()) {
 				case CR:
 				case LF:
@@ -199,7 +199,7 @@ public abstract class AbstractParser<NodeType extends Enum<?>> implements Parser
 				}
 				entry.append((char) c);
 				EntryUnderConstruction entryParameter = new EntryUnderConstruction(entry, reader);
-				boolean endOfEntry = endOfEntryPredicate.evaluate(entryParameter);
+				boolean endOfEntry = endOfEntryPredicate.test(entryParameter);
 				consumed = entryParameter.getRestored();
 				if (endOfEntry) { return entry.toString(); }
 			}

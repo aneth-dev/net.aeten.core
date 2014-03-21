@@ -8,7 +8,7 @@ import java.net.MulticastSocket;
 import java.net.SocketAddress;
 
 import net.aeten.core.spi.FieldInit;
-import net.aeten.core.spi.SpiInitializer;
+import net.aeten.core.spi.SpiConstructor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,8 @@ public class UdpIpSocketFactory {
 	private final Integer timeToLive;
 	private DatagramSocket socket;
 
-	public UdpIpSocketFactory(@SpiInitializer(generate = false) UdpIpSocketFactoryInitializer init) throws IOException {
+	@SpiConstructor(generate = false)
+	public UdpIpSocketFactory(UdpIpSocketFactoryInitializer init) throws IOException {
 		this.destinationInetSocketAddress = init.getDestinationInetSocketAddress();
 		this.sourceInetAddress = init.hasSourceInetAddress()? init.getSourceInetAddress(): null;
 		this.bind = init.hasBind()? init.getBind(): false;

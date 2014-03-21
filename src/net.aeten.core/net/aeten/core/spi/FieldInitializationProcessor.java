@@ -21,19 +21,29 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.AnnotationValue;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.ErrorType;
+import javax.lang.model.type.ExecutableType;
+import javax.lang.model.type.IntersectionType;
+import javax.lang.model.type.NoType;
+import javax.lang.model.type.NullType;
+import javax.lang.model.type.PrimitiveType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
+import javax.lang.model.type.TypeVariable;
+import javax.lang.model.type.UnionType;
+import javax.lang.model.type.WildcardType;
+import javax.lang.model.util.AbstractTypeVisitor8;
 
 import net.aeten.core.Factory;
 import net.aeten.core.parsing.Document;
 
 @Provider(Processor.class)
-@SupportedAnnotationTypes({ "net.aeten.core.spi.SpiInitializer",
-									"net.aeten.core.spi.FieldInit"
-})
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
+@SupportedAnnotationTypes({ "net.aeten.core.spi.SpiConstructor", "net.aeten.core.spi.FieldInit" })
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 public class FieldInitializationProcessor extends AbstractProcessor {
 
 	@Override
@@ -45,12 +55,12 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-		for (Element initializer: roundEnv.getElementsAnnotatedWith(SpiInitializer.class)) {
-			Element enclosingClass = getEnclosingClass(initializer);
-			AnnotationValue generate = getAnnotationValue(getAnnotationMirror(initializer, SpiInitializer.class), "generate");
-			String clazz = initializer.asType().toString();
+		for (Element spiConstructor: roundEnv.getElementsAnnotatedWith(SpiConstructor.class)) {
+			Element enclosingClass = getEnclosingClass(spiConstructor);
+			AnnotationValue generate = getAnnotationValue(getAnnotationMirror(spiConstructor, SpiConstructor.class), "generate");
+			String initializerClass = ((ExecutableElement)spiConstructor).getParameters().get(0).asType().toString();
 			if (!((Boolean) generate.getValue())) {
-				debug(FieldInitializationProcessor.class.getSimpleName() + " pass " + clazz);
+				debug(FieldInitializationProcessor.class.getSimpleName() + " pass " + initializerClass);
 				continue;
 			}
 			String pkg = processingEnv.getElementUtils().getPackageOf(enclosingClass).getQualifiedName().toString();
@@ -58,21 +68,21 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 			 * Tweak: when Class is already generated, clazz is
 			 * {package.name}.{ClassName}
 			 */
-			if (!pkg.isEmpty() && clazz.startsWith(pkg)) {
+			if (!pkg.isEmpty() && initializerClass.startsWith(pkg)) {
 				continue;
 			}
 
-			debug(FieldInitializationProcessor.class.getSimpleName() + " process " + clazz);
-			try (PrintWriter writer = getWriter(processingEnv.getFiler().createSourceFile(clazz.startsWith(pkg)? clazz: pkg + "." + clazz, initializer), AbstractProcessor.WriteMode.OVERRIDE, false)) {
+			debug(FieldInitializationProcessor.class.getSimpleName() + " process " + initializerClass);
+			try (PrintWriter writer = getWriter(processingEnv.getFiler().createSourceFile(initializerClass.startsWith(pkg)? initializerClass: pkg + "." + initializerClass, spiConstructor), AbstractProcessor.WriteMode.OVERRIDE, false)) {
 				writer.println("package " + pkg + ";");
 				writer.println();
 				writeImport(writer, List.class, ArrayList.class, HashMap.class, Map.class, Generated.class, Factory.class, Document.class, FieldInitFactory.class, SpiConfiguration.class);
 				writer.println();
 				writer.println("@Generated(\"" + FieldInitializationProcessor.class.getName() + "\")");
-				writer.println("public class " + clazz + " {");
+				writer.println("public class " + initializerClass + " {");
 				writer.println("	private final Map<String, Factory<Object, Void>> fieldsFactories;");
 				writer.println();
-				writer.println("	public " + clazz + "(" + SpiConfiguration.class.getSimpleName() + " configuration) {");
+				writer.println("	public " + initializerClass + "(" + SpiConfiguration.class.getSimpleName() + " configuration) {");
 				writer.println("		fieldsFactories = new HashMap<>();");
 				writer.println("		for (Document.Element element : configuration.root.asSequence()) {");
 				writer.println("			final String field;");
@@ -81,7 +91,7 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 				writer.println("			final Document.MappingEntry entry = element.asMappingEntry();");
 				writer.println("			switch (entry.getKey().asString()) {");
 				Element objectElement = processingEnv.getElementUtils().getTypeElement("java.lang.Object");
-				for (Element element = getEnclosingClass(initializer); !element.equals(objectElement); element = superTypeElement(element)) {
+				for (Element element = enclosingClass; !element.equals(objectElement); element = superTypeElement(element)) {
 					for (Element fieldInit: getElementsAnnotatedWith(element, FieldInit.class)) {
 						List<String> words = splitCamelCase(fieldInit.toString());
 						writer.println("			case \"" + fieldInit.toString() + "\":");
@@ -138,14 +148,13 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 				writer.println("				throw new IllegalArgumentException(String.format(\"No field named %s\", entry.getKey()));");
 				writer.println("			}");
 
-				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(entry.getValue(), type, parameterizedTypes, " + clazz + ".class.getClassLoader()));");
+				writer.println("			fieldsFactories.put(field, FieldInitFactory.create(entry.getValue(), type, parameterizedTypes, " + initializerClass + ".class.getClassLoader()));");
 				writer.println("		}");
 				writer.println("	}");
 
-				for (Element element = getEnclosingClass(initializer); !element.equals(objectElement); element = superTypeElement(element)) {
+				for (Element element = enclosingClass; !element.equals(objectElement); element = superTypeElement(element)) {
 					for (Element fieldInit: getElementsAnnotatedWith(getEnclosingClass(element), FieldInit.class)) {
 						String fildName = fieldInit.toString();
-
 						String typeName = getType(fieldInit);
 						TypeMirror type = fieldInit.asType();
 						List<TypeMirror> parameterizedTypes;
@@ -192,10 +201,10 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 				writer.println("}");
 
 			} catch (Throwable exception) {
-				warn("Unexpected exception " + exception.toString(), initializer);
+				warn("Unexpected exception " + exception.toString(), spiConstructor);
 			}
 		}
-		return false;
+		return true;
 	}
 
 	private List<String> splitCamelCase(String string) {
@@ -240,15 +249,98 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 		return processingEnv.getTypeUtils().asElement(superType);
 	}
 
-	static List<Element> getElementsAnnotatedWith(Element classElement, Class<? extends Annotation> annotation) {
-		List<Element> elements = new ArrayList<>();
+	List<Element> getElementsAnnotatedWith(Element classElement, final Class<? extends Annotation> annotation) {
+		final List<Element> elements = new ArrayList<>();
 		for (; classElement.getKind() != ElementKind.PACKAGE; classElement = classElement.getEnclosingElement()) {
 			for (Element element: classElement.getEnclosedElements()) {
-				if (element.getAnnotation(annotation) != null) {
+//				if (element.getKind() == ElementKind.CONSTRUCTOR) {
+//					final ExecutableElement constructor = element;
+//					constructor.asType().accept(new AbstractTypeVisitor<Boolean, Void>() {
+//						@Override
+//						public Boolean visitExecutable(ExecutableType t, Void p) {
+//							for (TypeMirror param: t.getParameterTypes()) {								
+//								if (param.getKind() == TypeKind.ERROR) {
+//									elements.add(((ErrorType)param).asElement());
+//								}
+//							}
+//							return null;
+//						}
+//					}, null);
+//				} else
+					if (element.getAnnotation(annotation) != null) {
 					elements.add(element);
 				}
 			}
 		}
 		return elements;
 	}
+}
+class AbstractTypeVisitor<R, P> extends AbstractTypeVisitor8<R, P> {
+
+	@Override
+	public R visitPrimitive(PrimitiveType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitNull(NullType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitArray(ArrayType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitDeclared(DeclaredType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitError(ErrorType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitTypeVariable(TypeVariable t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitWildcard(WildcardType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitExecutable(ExecutableType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitNoType(NoType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitIntersection(IntersectionType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public R visitUnion(UnionType t, P p) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
 }

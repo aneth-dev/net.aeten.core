@@ -3,7 +3,7 @@ package net.aeten.core.spi;
 import java.io.InputStreamReader;
 
 import net.aeten.core.Format;
-import net.aeten.core.Predicate;
+import java.util.function.Predicate;
 import net.aeten.core.parsing.Document;
 import net.aeten.core.parsing.MarkupNode;
 import net.aeten.core.parsing.Parser;
@@ -35,7 +35,7 @@ public class SpiConfiguration {
 			@SuppressWarnings("rawtypes")
 			Predicate<Parser> parserPredicate = new Predicate<Parser>() {
 				@Override
-				public boolean evaluate(Parser element) {
+				public boolean test(Parser element) {
 					Format format = element.getClass().getAnnotation(Format.class);
 					return (format != null) && format.value().equals(extension);
 				}

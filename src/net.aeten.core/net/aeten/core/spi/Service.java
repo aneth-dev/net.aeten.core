@@ -10,9 +10,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
 
 import net.aeten.core.Identifiable;
-import net.aeten.core.Predicate;
 import net.aeten.core.util.Concurrents;
 
 import org.slf4j.Logger;
@@ -77,7 +77,7 @@ public class Service {
 		for (S provider: getProviders(service, classLoader, new Predicate<Class<S>>() {
 
 			@Override
-			public boolean evaluate(Class<S> element) {
+			public boolean test(Class<S> element) {
 				return true;
 			}
 		})) {
@@ -92,7 +92,7 @@ public class Service {
 
 	public static <S>S getProvider(Class<S> service, ClassLoader classLoader, Predicate<Class<S>> classPredicate, Predicate<S> instancePredicate) {
 		for (S provider: getProviders(service, classLoader, classPredicate)) {
-			if (instancePredicate.evaluate(provider)) { return provider; }
+			if (instancePredicate.test(provider)) { return provider; }
 		}
 		throw new NoSuchElementException("Unable to find provider for service " + service.getName());
 	}
@@ -101,7 +101,7 @@ public class Service {
 		return getProvider(service, Thread.currentThread().getContextClassLoader(), new Predicate<Class<S>>() {
 
 			@Override
-			public boolean evaluate(Class<S> element) {
+			public boolean test(Class<S> element) {
 				return true;
 			}
 		}, instancePredicate);
@@ -119,7 +119,7 @@ public class Service {
 		return getProviders(service, classLoader, new Predicate<Class<S>>() {
 
 			@Override
-			public boolean evaluate(Class<S> element) {
+			public boolean test(Class<S> element) {
 				return true;
 			}
 		});

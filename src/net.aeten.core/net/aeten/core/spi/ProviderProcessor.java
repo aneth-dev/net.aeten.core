@@ -18,7 +18,7 @@ import javax.annotation.processing.Processor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
-import static javax.lang.model.SourceVersion.RELEASE_7;
+import static javax.lang.model.SourceVersion.RELEASE_8;
 import javax.lang.model.element.*;
 import javax.lang.model.type.TypeMirror;
 import javax.tools.FileObject;
@@ -33,7 +33,7 @@ import javax.tools.StandardLocation;
 									"net.aeten.core.spi.Configurations",
 									"net.aeten.core.spi.Configuration"
 })
-@SupportedSourceVersion(RELEASE_7)
+@SupportedSourceVersion(RELEASE_8)
 public class ProviderProcessor extends AbstractProcessor {
 
 	private static final Map<String, FileObject> servicesFileObjects = Collections.synchronizedMap(new HashMap<String, FileObject>());
@@ -48,8 +48,12 @@ public class ProviderProcessor extends AbstractProcessor {
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		List<Element> initializers = new ArrayList<>();
-		for (Element element: roundEnv.getElementsAnnotatedWith(SpiInitializer.class)) {
-			initializers.add(element);
+		for (Element element: roundEnv.getElementsAnnotatedWith(SpiConstructor.class)) {
+			ExecutableElement constructor = (ExecutableElement) element;
+			List<? extends VariableElement> parameters = constructor.getParameters();
+			if (parameters.size() == 1) {
+				initializers.add(parameters.get(0));
+			}	
 		}
 
 		for (Element element: roundEnv.getElementsAnnotatedWith(Configurations.class)) {
@@ -165,7 +169,7 @@ public class ProviderProcessor extends AbstractProcessor {
 				for (Element enclosedElement: providerElement.getEnclosedElements()) {
 					if (enclosedElement.getKind() == ElementKind.CONSTRUCTOR) {
 						ExecutableElement constructor = (ExecutableElement) enclosedElement;
-						if (constructor.getParameters().size() == 1 && constructor.getParameters().get(0).getAnnotation(SpiInitializer.class) != null) {
+						if (constructor.getParameters().size() == 1 && constructor.getAnnotation(SpiConstructor.class) != null) {
 							initializerType = constructor.getParameters().get(0).asType();
 							thrownTypes = constructor.getThrownTypes().iterator();
 							break;

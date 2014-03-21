@@ -9,7 +9,7 @@ import net.aeten.core.spi.FieldInit;
 import net.aeten.core.spi.Provider;
 import net.aeten.core.spi.SpiConfiguration;
 import net.aeten.core.spi.SpiFactory;
-import net.aeten.core.spi.SpiInitializer;
+import net.aeten.core.spi.SpiConstructor;
 
 @Provider(SpiFactory.class)
 public class ScheduledExecutorFactory implements SpiFactory<ScheduledExecutorService, Document.Element> {
@@ -24,7 +24,8 @@ public class ScheduledExecutorFactory implements SpiFactory<ScheduledExecutorSer
 		/* TODO */
 		//	RejectedExecutionHandler handler
 
-		Init(@SpiInitializer(generate = false) ScheduledExecutorFactoryInit init) {
+		@SpiConstructor(generate = false)
+		Init(ScheduledExecutorFactoryInit init) {
 			corePoolSize = init.getCorePoolSize();
 			threadFactory = init.hasThreadFactory()? init.getThreadFactory(): null;
 		}

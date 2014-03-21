@@ -1,6 +1,5 @@
 package net.aeten.core.spi;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.TypeVariable;
@@ -11,10 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
 import net.aeten.core.Factory;
 import net.aeten.core.Identifiable;
-import net.aeten.core.Predicate;
 import net.aeten.core.parsing.Document;
 import net.aeten.core.parsing.Document.ElementType;
 
@@ -90,17 +89,17 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 								"rawtypes"
 	})
 	private static Factory<Object, Void> getFactoryWithSpiFactory(final Document.Element configuration, final Class<?> type) {
-		return new FieldInitFactory<>(Service.getProvider(SpiFactory.class, new Predicate<SpiFactory>() {
+		SpiFactory<Object, Document.Element> factory = Service.getProvider(SpiFactory.class, new Predicate<SpiFactory>() {
 			@Override
-			public boolean evaluate(SpiFactory element) {
+			public boolean test(SpiFactory element) {
 				if (element.getParameterType().equals(Document.Element.class) && element.getTypes().length > 0) {
 					for (Class<?> t: element.getTypes()) {
 						if (t.equals(type)) { return true; }
 					}
 				}
 				return false;
-			}
-		}), configuration);
+			}});
+		return new FieldInitFactory<>(factory, configuration);
 	}
 
 	private static Factory<Object, Void> getFactoryWithSpiInitializer(Class<?> type, Document.Element configuration, ClassLoader classLoader) throws IllegalArgumentException {
@@ -129,8 +128,8 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 
 	private static Factory<Object, Void> getFactoryWithSpiInitializer(Class<?> type, Document.Element configuration) throws NoSuchElementException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		for (Constructor<?> constructor: type.getConstructors()) {
-			Annotation[][] annotations = constructor.getParameterAnnotations();
-			if (annotations.length == 1 && annotations[0].length == 1 && annotations[0][0] instanceof SpiInitializer) {
+			SpiConstructor spiConstructor = constructor.getAnnotation(SpiConstructor.class);
+			if (spiConstructor != null && constructor.getParameterCount() == 1) {
 				Class<?> initializerClass = constructor.getParameterTypes()[0];
 				Object initializer = initializerClass.getConstructor(SpiConfiguration.class).newInstance(new SpiConfiguration(configuration));
 				return getFactoryWithSpiInitializer(constructor, initializer);
@@ -165,7 +164,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 							| IllegalAccessException ex) {
 					throw new IllegalArgumentException("Unable to instanciate " + className + " with default construtor", ex);
 				}
-			}
+			}	
 		};
 	}
 
@@ -214,7 +213,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 						// Second chance, try to retrieve a SpiFactory<type, String>
 						return Service.getProvider(SpiFactory.class, new Predicate<SpiFactory>() {
 							@Override
-							public boolean evaluate(SpiFactory element) {
+							public boolean test(SpiFactory element) {
 								if (element.getParameterType().equals(String.class) && element.getTypes().length > 0) {
 									for (Class<?> t: element.getTypes()) {
 										if (t.equals(type)) { return true; }
