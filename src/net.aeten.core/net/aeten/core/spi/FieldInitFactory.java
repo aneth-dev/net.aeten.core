@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
 
 import net.aeten.core.Factory;
 import net.aeten.core.Identifiable;
@@ -89,16 +88,14 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 								"rawtypes"
 	})
 	private static Factory<Object, Void> getFactoryWithSpiFactory(final Document.Element configuration, final Class<?> type) {
-		SpiFactory<Object, Document.Element> factory = Service.getProvider(SpiFactory.class, new Predicate<SpiFactory>() {
-			@Override
-			public boolean test(SpiFactory element) {
-				if (element.getParameterType().equals(Document.Element.class) && element.getTypes().length > 0) {
-					for (Class<?> t: element.getTypes()) {
-						if (t.equals(type)) { return true; }
-					}
+		SpiFactory<Object, Document.Element> factory = Service.getProvider(SpiFactory.class, (SpiFactory element) -> {
+			if (element.getParameterType().equals(Document.Element.class) && element.getTypes().length > 0) {
+				for (Class<?> t: element.getTypes()) {
+					if (t.equals(type)) { return true; }
 				}
-				return false;
-			}});
+			}
+			return false;
+		});
 		return new FieldInitFactory<>(factory, configuration);
 	}
 
@@ -164,7 +161,7 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 							| IllegalAccessException ex) {
 					throw new IllegalArgumentException("Unable to instanciate " + className + " with default construtor", ex);
 				}
-			}	
+			}
 		};
 	}
 
@@ -211,16 +208,13 @@ public class FieldInitFactory<T, P> implements Factory<T, Void> {
 							| NoSuchElementException exception) {
 					try {
 						// Second chance, try to retrieve a SpiFactory<type, String>
-						return Service.getProvider(SpiFactory.class, new Predicate<SpiFactory>() {
-							@Override
-							public boolean test(SpiFactory element) {
-								if (element.getParameterType().equals(String.class) && element.getTypes().length > 0) {
-									for (Class<?> t: element.getTypes()) {
-										if (t.equals(type)) { return true; }
-									}
+						return Service.getProvider(SpiFactory.class, (SpiFactory element) -> {
+							if (element.getParameterType().equals(String.class) && element.getTypes().length > 0) {
+								for (Class<?> t: element.getTypes()) {
+									if (t.equals(type)) { return true; }
 								}
-								return false;
 							}
+							return false;
 						}).create(value);
 					} catch (NoSuchElementException nse) {
 						throw new NoSuchElementException("Unable to find " + SpiFactory.class.getName() + " for " + type.getName() + " with " + value);
