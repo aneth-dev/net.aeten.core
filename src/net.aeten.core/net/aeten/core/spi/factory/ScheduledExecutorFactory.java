@@ -24,7 +24,7 @@ public class ScheduledExecutorFactory implements SpiFactory<ScheduledExecutorSer
 		/* TODO */
 		//	RejectedExecutionHandler handler
 
-		Init(@SpiInitializer(generate = false) ScheduledExecutorFactoryInit init) {
+		Init(@SpiInitializer(generated = false) ScheduledExecutorFactoryInit init) {
 			corePoolSize = init.getCorePoolSize();
 			threadFactory = init.hasThreadFactory()? init.getThreadFactory(): null;
 		}

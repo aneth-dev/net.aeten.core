@@ -47,9 +47,9 @@ public class FieldInitializationProcessor extends AbstractProcessor {
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		for (Element initializer: roundEnv.getElementsAnnotatedWith(SpiInitializer.class)) {
 			Element enclosingClass = getEnclosingClass(initializer);
-			AnnotationValue generate = getAnnotationValue(getAnnotationMirror(initializer, SpiInitializer.class), "generate");
+			AnnotationValue generated = getAnnotationValue(getAnnotationMirror(initializer, SpiInitializer.class), "generated");
 			String clazz = initializer.asType().toString();
-			if (!((Boolean) generate.getValue())) {
+			if (!((Boolean) generated.getValue())) {
 				debug(FieldInitializationProcessor.class.getSimpleName() + " pass " + clazz);
 				continue;
 			}
