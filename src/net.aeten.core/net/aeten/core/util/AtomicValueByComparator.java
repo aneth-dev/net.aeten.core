@@ -6,7 +6,10 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import net.aeten.core.Factory;
+import net.jcip.annotations.ThreadSafe;
 
+/** Use a {@link ReentrantLock} */
+@ThreadSafe
 public final class AtomicValueByComparator<V> implements AtomicValue<V>, Serializable {
 	private static final long serialVersionUID = -3328578771876336508L;
 	private final Comparator<V> comparator;

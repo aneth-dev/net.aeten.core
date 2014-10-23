@@ -6,7 +6,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.aeten.core.Factory;
 import net.aeten.core.util.Concurrents.AtomicComparator;
+import net.jcip.annotations.ThreadSafe;
 
+@ThreadSafe
 public class ConcurrentKnownKeysMap<K, V> extends AbstractKnownKeysMap<K, V> implements ConcurrentMap<K, V> {
 	private static final long serialVersionUID = 1347528148487196108L;
 	private final AtomicComparator comparator;
@@ -111,6 +113,7 @@ public class ConcurrentKnownKeysMap<K, V> extends AbstractKnownKeysMap<K, V> imp
 		return new ConcurrentKnownKeysMap<K, V>(this);
 	}
 
+	// TODO Parallelize and compare to ConcurrentHashMap
 	public static void main(String[] args) {
 		test("warmup");
 		test("warmup2");

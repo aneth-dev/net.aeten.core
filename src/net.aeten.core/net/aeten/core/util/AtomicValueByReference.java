@@ -4,7 +4,10 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.aeten.core.Factory;
+import net.jcip.annotations.ThreadSafe;
 
+/** Delegate to {@link AtomicReference} */
+@ThreadSafe
 public final class AtomicValueByReference<V> implements AtomicValue<V>, Serializable {
 	private static final long serialVersionUID = 3931680837605611661L;
 	private final AtomicReference<V> reference;
