@@ -50,7 +50,7 @@ public class NativeLibraryLoader {
 				 * except on windows, to avoid problems with Web Start.
 				 */
 				File dir = getTempDir();
-				lib = new File(dir, lname + (Platform.isWindows()? ".dll": ""));
+				lib = new File (dir, libname + (Platform.isWindows ()? ".dll": ""));
 				if (lib.exists()) { return lib; }
 				lib.deleteOnExit();
 				fos = new FileOutputStream(lib);
@@ -74,15 +74,8 @@ public class NativeLibraryLoader {
 			}
 		}
 		System.load(lib.getAbsolutePath());
-		/*
-		 * Attempt to delete immediately once jnidispatch is successfully loaded.
-		 * This avoids the complexity of trying to do so on "exit",
-		 * which point can vary under different circumstances
-		 * (native compilation, dynamically loaded modules, normal application,
-		 * etc).
-		 */
 		if (unpacked) {
-			deleteNativeLibrary(lib.getAbsolutePath());
+			lib.deleteOnExit();
 		}
 		return lib;
 	}
@@ -115,42 +108,6 @@ public class NativeLibraryLoader {
 			break;
 		}
 		return osPrefix;
-	}
-
-	/**
-	 * Remove any automatically unpacked native library.
-	 * 
-	 * This will fail on windows, which disallows removal of any file that is
-	 * still in use, so an alternative is required in that case. Mark
-	 * the file that could not be deleted, and attempt to delete any
-	 * temporaries on next startup.
-	 * 
-	 * Do NOT force the class loader to unload the native library, since
-	 * that introduces issues with cleaning up any extant JNA bits
-	 * (e.g. Memory) which may still need use of the library before shutdown.
-	 */
-	static boolean deleteNativeLibrary(String path) {
-		File flib = new File(path);
-		if (flib.delete()) { return true; }
-
-		// Couldn't delete it, mark for later deletion
-		markTemporaryFile(flib);
-
-		return false;
-	}
-
-	/**
-	 * Perform cleanup of automatically unpacked native shared library.
-	 */
-	static void markTemporaryFile(File file) {
-		// If we can't force an unload/delete, flag the file for later 
-		// deletion
-		try {
-			File marker = new File(file.getParentFile(), file.getName() + ".x");
-			marker.createNewFile();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	static File getTempDir() {
