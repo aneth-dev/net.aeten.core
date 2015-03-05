@@ -11,10 +11,18 @@ import java.net.URL;
 public class JarExtractor {
 
 	public static File extract(Class<?> loadinClass, String resourceRelativePath) {
-		return extract(loadinClass, resourceRelativePath, getTempDir(loadinClass.getName()));
+		return extract(loadinClass, resourceRelativePath, false);
+	}
+
+	public static File extract(Class<?> loadinClass, String resourceRelativePath, boolean deleteOnExit) {
+		return extract(loadinClass, resourceRelativePath, getTempDir(loadinClass.getName()), deleteOnExit);
 	}
 
 	public static File extract(Class<?> loadinClass, String resourceRelativePath, File outputDirectory) {
+		return extract(loadinClass, resourceRelativePath, outputDirectory, false);
+	}
+
+	public static File extract(Class<?> loadinClass, String resourceRelativePath, File outputDirectory, boolean deleteOnExit) {
 
 		URL url = loadinClass.getResource(resourceRelativePath);
 		if (url == null) { throw new UnsatisfiedLinkError("JarExtractor (" + resourceRelativePath + ") not found in resource path"); }
@@ -39,7 +47,9 @@ public class JarExtractor {
 				 * except on windows, to avoid problems with Web Start.
 				 */
 				file = new File(outputDirectory, resourceRelativePath);
-				if (file.exists()) { return file; }
+				if (deleteOnExit) {
+					file.deleteOnExit();
+				} else if (file.exists()) { return file; }
 				file.getParentFile().mkdirs();
 				fos = new FileOutputStream(file);
 				int count;
