@@ -23,7 +23,13 @@ public class NativeLibraryLoader {
 		URL url = loadinClass.getResource(resourceName);
 		boolean unpacked = false;
 
-		// Add an ugly hack for OpenJDK (soylatte) - JNI libs use the usual *.dylib extension 
+		// Add an ugly hack for Windows
+		if (url == null && Platform.isWindows()) {
+			libname = "lib" + libname;
+			resourceName = getNativeResourcePath() + "/" + libname;
+			url = loadinClass.getResource(resourceName);
+		}
+		// Add an ugly hack for OpenJDK (soylatte) - JNI libs use the usual *.dylib extension
 		if (url == null && Platform.isMac() && resourceName.endsWith(".dylib")) {
 			resourceName = resourceName.substring(0, resourceName.lastIndexOf(".dylib")) + ".jnilib";
 			url = loadinClass.getResource(resourceName);
@@ -44,13 +50,8 @@ public class NativeLibraryLoader {
 
 			FileOutputStream fos = null;
 			try {
-				/*
-				 * Suffix is required on windows, or library fails to load Let Java
-				 * pick the suffix,
-				 * except on windows, to avoid problems with Web Start.
-				 */
 				File dir = getTempDir();
-				lib = new File (dir, libname + (Platform.isWindows ()? ".dll": ""));
+				lib = new File (dir, libname);
 				if (lib.exists()) { return lib; }
 				lib.deleteOnExit();
 				fos = new FileOutputStream(lib);
